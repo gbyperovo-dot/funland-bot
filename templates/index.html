@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <title>FunLand — Развлекательный центр</title>
     <link rel="stylesheet" href="/static/style.css">
+    <!-- ✅ Исправлено: убран пробел в URL -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
     <div class="container">
@@ -22,6 +24,9 @@
             <button onclick="ask('vr')">🎮 VR-зоны</button>
             <button onclick="ask('батуты')">🏀 Батутный центр</button>
             <button onclick="ask('нерф')">🔫 Нерф-арена</button>
+            <button onclick="ask('день рождения')">🎉 День рождения</button>
+            <button onclick="ask('выпускные')">🎓 Выпускные</button>
+            <button onclick="ask('выездные мероприятия')">🚐 Выездные</button>
             <button onclick="ask('акции')">🎁 Акции</button>
             <button onclick="goToBooking()" style="background: #ffc107; color: #212529;">📅 Забронировать</button>
             <button onclick="openCalculator()" class="btn-calc">🧮 Калькулятор</button>
@@ -39,20 +44,22 @@
                         <option value="">Выберите</option>
                         <option value="birthday">🎉 День рождения</option>
                         <option value="graduation">🎓 Выпускной</option>
+                        <option value="outdoor">🚐 Выездное мероприятие</option>
                     </select>
                 </label>
                 <div id="dynamicForm"></div>
                 <div class="result" id="result"></div>
-                <!-- КНОПКА РАССЧИТАТЬ -->
+                <!-- ✅ Кнопка "Рассчитать" -->
                 <button type="button" onclick="calculate()">Рассчитать</button>
             </form>
         </div>
     </div>
 
-    <p style="text-align: center; margin-top: 10px;">
-        <a href="/bookings" style="color: #6f42c1;">📋 Все бронирования</a>
+    <!-- Ссылки внизу -->
+    <p style="text-align: center; margin-top: 15px; font-size: 14px; color: #6c757d;">
+        <a href="/bookings" style="color: #6f42c1; margin: 0 10px;">📋 Все бронирования</a>
         | 
-        <a href="/admin/login" style="color: #dc3545;">🔐 Админка</a>
+        <a href="/admin/login" style="color: #dc3545; margin: 0 10px;">🔐 Админка</a>
     </p>
 
     <script>
@@ -60,11 +67,13 @@
         const suggestions = document.getElementById('suggestions');
         const modal = document.getElementById('calcModal');
 
+        // Приветствие по времени
         function getGreeting() {
             const h = new Date().getHours();
             return h < 6 ? "Доброй ночи" : h < 12 ? "Доброе утро" : h < 18 ? "Добрый день" : "Добрый вечер";
         }
 
+        // Добавление сообщения
         function addMessage(role, text) {
             const msg = document.createElement('div');
             msg.className = `message ${role}`;
@@ -73,6 +82,7 @@
             chat.scrollTop = chat.scrollHeight;
         }
 
+        // Отправка вопроса
         function sendQuestion() {
             const input = document.getElementById('user-input');
             const question = input.value.trim();
@@ -85,40 +95,59 @@
             fetch('/ask', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question: question })
+                body: JSON.stringify({ 
+                    question: question,
+                    user_id: "user_" + (Date.now() % 10000)
+                })
             })
             .then(r => r.json())
             .then(data => {
                 addMessage('assistant', data.answer);
                 suggestions.style.display = "flex";
             })
-            .catch(() => {
-                addMessage('assistant', '🚫 Ошибка подключения.');
+            .catch(err => {
+                console.error("Ошибка запроса:", err);
+                addMessage('assistant', '🚫 Ошибка подключения. Попробуйте позже.');
                 suggestions.style.display = "flex";
             });
         }
 
+        // Быстрый запрос
         function ask(topic) {
             document.getElementById('user-input').value = topic;
             sendQuestion();
         }
 
+        // Переход на бронирование
         function goToBooking() {
             window.location.href = '/booking';
         }
 
+        // Скрыть подсказки
         function hideSuggestions() {
             suggestions.style.display = "none";
         }
 
+        // === Загрузка страницы ===
         window.onload = () => {
             addMessage('assistant', `**${getGreeting()}!**\n\nРады вас видеть в **FunLand**! 🎪\n\nЧем могу помочь?`);
             suggestions.style.display = "flex";
+
+            // ✅ Обработка сообщений из других окон (например, калькулятор)
+            window.addEventListener("message", function(event) {
+                if (event.data.type === "birthday_calc") {
+                    addMessage("assistant", `🧮 Рассчитана стоимость дня рождения: **${event.data.amount} ₽**\n\nХотите забронировать? Напишите: *«хочу забронировать»*`);
+                }
+            });
         };
 
         // === Калькулятор ===
-        function openCalculator() { modal.style.display = "block"; }
-        function closeCalculator() { modal.style.display = "none"; }
+        function openCalculator() { 
+            modal.style.display = "block"; 
+        }
+        function closeCalculator() { 
+            modal.style.display = "none"; 
+        }
 
         function updateForm() {
             const service = document.getElementById("service").value;
@@ -132,13 +161,14 @@
                     </label>
                     <label>Пакет:
                         <select id="package">
-                            <option value="standard">Стандарт</option>
-                            <option value="extreme">Экстрим</option>
-                            <option value="vr">VR-приключение</option>
+                            <option value="standard">Стандарт (8000 ₽)</option>
+                            <option value="extreme">Экстрим (12 000 ₽)</option>
+                            <option value="vr">VR-приключение (15 000 ₽)</option>
                         </select>
                     </label>
-                    <label><input type="checkbox" id="anim"> Аниматор (+1500 ₽)</label>
-                    <label><input type="checkbox" id="cake"> Торт (+2000 ₽)</label>
+                    <label><input type="checkbox" id="anim"> Аниматор (+3000 ₽)</label>
+                    <label><input type="checkbox" id="cake"> Фотосессия (+2000 ₽)</label>
+                    <label><input type="checkbox" id="tort"> Торт (+1500 ₽)</label>
                 `;
             }
         }
@@ -148,11 +178,13 @@
             const guests = parseInt(document.getElementById("guests").value) || 10;
             const anim = document.getElementById("anim").checked;
             const cake = document.getElementById("cake").checked;
+            const tort = document.getElementById("tort").checked;
 
-            const base = { standard: 2500, extreme: 3500, vr: 4000 }[pkg];
-            let total = base + (guests - 10) * 100;
-            if (anim) total += 1500;
+            const base = { standard: 8000, extreme: 12000, vr: 15000 }[pkg];
+            let total = base + Math.max(0, (guests - 10)) * 200;
+            if (anim) total += 3000;
             if (cake) total += 2000;
+            if (tort) total += 1500;
 
             document.getElementById("result").innerHTML = `
                 <strong>Итого: ${total} ₽</strong>
