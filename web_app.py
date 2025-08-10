@@ -1,19 +1,25 @@
+# Все импорты в начале
 import os
 import json
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, send_from_directory
 from dotenv import load_dotenv
 import requests
 import time
 
-# Загружаем переменные окружения
-load_dotenv()
-
-# Создаём приложение
+# 1. Сначала создаем приложение Flask
 app = Flask(__name__)
+
+# 2. Загружаем переменные окружения
+load_dotenv()
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key")
 
-# Файлы
+# 3. Теперь можно объявлять роуты
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory('static', path)
+
+# 4. Конфигурация и переменные
 BOOKINGS_FILE = "bookings.json"
 LOG_FILE = "bot_log.json"
 bookings = []
@@ -289,3 +295,4 @@ load_bookings()
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
+    
