@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>FunLand — Развлекательный центр</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 FunLand — ваш центр вдохновения и активного отдыха</h1>
+        <div id="chat" class="chat-box"></div>
+
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Напишите вопрос или выберите подсказку..." autofocus>
+            <button onclick="sendQuestion()">💬 Отправить</button>
+            <button onclick="clearChat()" class="btn-clear">🗑️ Очистить</button>
+        </div>
+
+        <!-- Подсказки -->
+        <div id="suggestions" class="suggestions">
+            <button onclick="ask('vr')">🎮 VR-зоны</button>
+            <button onclick="ask('батуты')">🏀 Батутный центр</button>
+            <button onclick="ask('нерф')">🔫 Нерф-арена</button>
+            <button onclick="ask('акции')">🎁 Акции</button>
+            <button onclick="goToBooking()" style="background: #ffc107; color: #212529;">📅 Забронировать</button>
+            <button onclick="openCalculator()" class="btn-calc">🧮 Калькулятор</button>
+        </div>
+    </div>
+
+    <!-- Модальное окно калькулятора -->
+    <div id="calcModal" class="modal">
+        <div class="modal-content">
+            <h2>🧮 Калькулятор стоимости</h2>
+            <span class="close" onclick="closeCalculator()">&times;</span>
+            <form id="calcForm">
+                <label>Услуга:
+                    <select id="service" onchange="updateForm()">
+                        <option value="">Выберите</option>
+                        <option value="birthday">🎉 День рождения</option>
+                        <option value="graduation">🎓 Выпускной</option>
+                    </select>
+                </label>
+                <div id="dynamicForm"></div>
+                <div class="result" id="result"></div>
+                <!-- КНОПКА РАССЧИТАТЬ -->
+                <button type="button" onclick="calculate()">Рассчитать</button>
+            </form>
+        </div>
+    </div>
+
+    <p style="text-align: center; margin-top: 10px;">
+        <a href="/bookings" style="color: #6f42c1;">📋 Все бронирования</a>
+        | 
+        <a href="/admin/login" style="color: #dc3545;">🔐 Админка</a>
+    </p>
+
+    <script>
+        const chat = document.getElementById('chat');
+        const suggestions = document.getElementById('suggestions');
+        const modal = document.getElementById('calcModal');
+
+        function getGreeting() {
+            const h = new Date().getHours();
+            return h < 6 ? "Доброй ночи" : h < 12 ? "Доброе утро" : h < 18 ? "Добрый день" : "Добрый вечер";
+        }
+
+        function addMessage(role, text) {
+            const msg = document.createElement('div');
+            msg.className = `message ${role}`;
+            msg.innerHTML = marked.parse(text);
+            chat.appendChild(msg);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function sendQuestion() {
+            const input = document.getElementById('user-input');
+            const question = input.value.trim();
+            if (!question) return;
+
+            addMessage('user', question);
+            input.value = '';
+            hideSuggestions();
+
+            fetch('/ask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question: question })
+            })
+            .then(r => r.json())
+            .then(data => {
+                addMessage('assistant', data.answer);
+                suggestions.style.display = "flex";
+            })
+            .catch(() => {
+                addMessage('assistant', '🚫 Ошибка подключения.');
+                suggestions.style.display = "flex";
+            });
+        }
+
+        function ask(topic) {
+            document.getElementById('user-input').value = topic;
+            sendQuestion();
+        }
+
+        function goToBooking() {
+            window.location.href = '/booking';
+        }
+
+        function hideSuggestions() {
+            suggestions.style.display = "none";
+        }
+
+        window.onload = () => {
+            addMessage('assistant', `**${getGreeting()}!**\n\nРады вас видеть в **FunLand**! 🎪\n\nЧем могу помочь?`);
+            suggestions.style.display = "flex";
+        };
+
+        // === Калькулятор ===
+        function openCalculator() { modal.style.display = "block"; }
+        function closeCalculator() { modal.style.display = "none"; }
+
+        function updateForm() {
+            const service = document.getElementById("service").value;
+            const df = document.getElementById("dynamicForm");
+            df.innerHTML = "";
+
+            if (service === "birthday") {
+                df.innerHTML = `
+                    <label>Количество гостей:
+                        <input type="number" id="guests" min="5" max="30" value="10">
+                    </label>
+                    <label>Пакет:
+                        <select id="package">
+                            <option value="standard">Стандарт</option>
+                            <option value="extreme">Экстрим</option>
+                            <option value="vr">VR-приключение</option>
+                        </select>
+                    </label>
+                    <label><input type="checkbox" id="anim"> Аниматор (+1500 ₽)</label>
+                    <label><input type="checkbox" id="cake"> Торт (+2000 ₽)</label>
+                `;
+            }
+        }
+
+        function calculate() {
+            const pkg = document.getElementById("package").value;
+            const guests = parseInt(document.getElementById("guests").value) || 10;
+            const anim = document.getElementById("anim").checked;
+            const cake = document.getElementById("cake").checked;
+
+            const base = { standard: 2500, extreme: 3500, vr: 4000 }[pkg];
+            let total = base + (guests - 10) * 100;
+            if (anim) total += 1500;
+            if (cake) total += 2000;
+
+            document.getElementById("result").innerHTML = `
+                <strong>Итого: ${total} ₽</strong>
+                <button onclick="sendCalcResult(${total})">Отправить в чат</button>
+            `;
+        }
+
+        function sendCalcResult(amount) {
+            addMessage('assistant', `🧮 Рассчитана стоимость: **${amount} ₽**`);
+            closeCalculator();
+        }
+
+        function clearChat() {
+            chat.innerHTML = "";
+            addMessage('assistant', `**${getGreeting()}!**\n\nРады вас видеть в **FunLand**! 🎪`);
+            suggestions.style.display = "flex";
+        }
+    </script>
+</body>
+</html>
