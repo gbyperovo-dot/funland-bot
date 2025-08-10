@@ -1,0 +1,7 @@
+Python 3.12.8
+funland-bot/
+├── web_app.py
+├── requirements.txt
+├── runtime.txt
+├── vercel.json
+└── templates/
