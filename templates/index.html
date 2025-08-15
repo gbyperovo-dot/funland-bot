@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>FunLand — Развлекательный центр</title>
+    <title>D-Space — Развлекательный центр</title>
     <link rel="stylesheet" href="/static/style.css">
     <!-- ✅ Исправлено: убран пробел в URL -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -10,7 +10,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🎉 FunLand — ваш центр вдохновения и активного отдыха</h1>
+        <h1>🎉 D-Space— ваш центр вдохновения и активного отдыха</h1>
         <div id="chat" class="chat-box"></div>
 
         <div class="input-area">
@@ -57,8 +57,7 @@
 
     <!-- Ссылки внизу -->
     <p style="text-align: center; margin-top: 15px; font-size: 14px; color: #6c757d;">
-        <a href="/bookings" style="color: #6f42c1; margin: 0 10px;">📋 Все бронирования</a>
-        | 
+        
         <a href="/admin/login" style="color: #dc3545; margin: 0 10px;">🔐 Админка</a>
     </p>
 
@@ -130,7 +129,7 @@
 
         // === Загрузка страницы ===
         window.onload = () => {
-            addMessage('assistant', `**${getGreeting()}!**\n\nРады вас видеть в **FunLand**! 🎪\n\nЧем могу помочь?`);
+            addMessage('assistant', `**${getGreeting()}!**\n\nРады вас видеть в **D-Space**! 🎪\n\nЧем могу помочь?`);
             suggestions.style.display = "flex";
 
             // ✅ Обработка сообщений из других окон (например, калькулятор)
@@ -199,7 +198,7 @@
 
         function clearChat() {
             chat.innerHTML = "";
-            addMessage('assistant', `**${getGreeting()}!**\n\nРады вас видеть в **FunLand**! 🎪`);
+            addMessage('assistant', `**${getGreeting()}!**\n\nРады вас видеть в **D-Space**! 🎪`);
             suggestions.style.display = "flex";
         }
     </script>
