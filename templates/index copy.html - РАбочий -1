@@ -92,11 +92,11 @@
             hideSuggestions();
 
             fetch('/ask', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-        question: question,
-        user_id: "user_" + (Date.now() % 10000)  // ← уникальный ID
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    question: question,
+                    user_id: "user_" + (Date.now() % 10000)
                 })
             })
             .then(r => r.json())
