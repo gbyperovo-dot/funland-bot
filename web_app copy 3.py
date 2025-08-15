@@ -3,7 +3,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 import os
 import json
 import time
-import shutil
+import threading
 from datetime import datetime
 from dotenv import load_dotenv
 import requests
@@ -13,18 +13,18 @@ load_dotenv()
 
 # --- Создание приложения ---
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key-for-funland-bot")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key")
 
 # --- Глобальные переменные ---
 KNOWLEDGE_BASE = {}
 BOOKINGS = []
 conversation_history = {}
 LOG_FILE = "bot_log.json"
-BACKUPS_DIR = "backups"
 
 # --- Пути ---
 KNOWLEDGE_FILE = "knowledge_base.json"
 BOOKINGS_FILE = "bookings.json"
+BACKUPS_DIR = "backups"
 
 # --- Вспомогательные функции ---
 
@@ -39,26 +39,21 @@ def load_knowledge_base():
         except Exception as e:
             print(f"❌ Ошибка загрузки базы знаний: {e}")
     else:
-        print("⚠️ Файл knowledge_base.json не найден. Будет создан при первом сохранении.")
+        print("⚠️ Файл knowledge_base.json не найден.")
 
 def save_knowledge_base():
-    """Сохраняет базу знаний в JSON + резервная копия"""
+    """Сохраняет базу знаний + резервная копия"""
     try:
-        # Создаём папку backups
         if not os.path.exists(BACKUPS_DIR):
             os.makedirs(BACKUPS_DIR)
-        # Создаём бэкап
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = os.path.join(BACKUPS_DIR, f"knowledge_base_{timestamp}.json")
         shutil.copy2(KNOWLEDGE_FILE, backup_path)
-        print(f"🔄 Создана резервная копия: {backup_path}")
-
-        # Сохраняем
         with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
             json.dump(KNOWLEDGE_BASE, f, ensure_ascii=False, indent=4)
         print("✅ База знаний сохранена")
     except Exception as e:
-        print(f"❌ Ошибка сохранения базы: {e}")
+        print(f"❌ Ошибка сохранения: {e}")
 
 def load_bookings():
     """Загружает бронирования"""
@@ -73,6 +68,12 @@ def load_bookings():
     else:
         BOOKINGS = []
 
+def save_booking(data):
+    """Сохраняет новое бронирование"""
+    BOOKINGS.append(data)
+    with open(BOOKINGS_FILE, "w", encoding="utf-8") as f:
+        json.dump(BOOKINGS, f, ensure_ascii=False, indent=4)
+
 def log_interaction(question, answer, source):
     """Логирует диалог"""
     log_entry = {
@@ -82,10 +83,11 @@ def log_interaction(question, answer, source):
         "source": source
     }
     try:
-        logs = []
         if os.path.exists(LOG_FILE):
             with open(LOG_FILE, "r", encoding="utf-8") as f:
                 logs = json.load(f)
+        else:
+            logs = []
         logs.append(log_entry)
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             json.dump(logs, f, ensure_ascii=False, indent=4)
@@ -110,7 +112,7 @@ def call_yandex_gpt(prompt, history=None):
         "completionOptions": {
             "stream": False,
             "temperature": 0.3,
-            "maxTokens": 1000  # Число, не строка!
+            "maxTokens": 1000
         },
         "messages": messages
     }
@@ -132,22 +134,18 @@ def call_yandex_gpt(prompt, history=None):
             time.sleep(1)
     return "❌ Не удалось получить ответ. Попробуйте позже."
 
-# --- Загрузка данных при старте ---
+# --- Загрузка данных ---
 load_knowledge_base()
 load_bookings()
-
 
 # --- Маршруты ---
 
 @app.route("/")
 def index():
-    """Главная страница чата"""
     return render_template("index.html")
-
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    """Обработка вопроса пользователя"""
     data = request.get_json()
     question = data.get("question", "").strip().lower()
     user_id = data.get("user_id", "default")
@@ -171,10 +169,8 @@ def ask():
     log_interaction(question, gpt_answer, "yandex_gpt")
     return jsonify({"answer": gpt_answer})
 
-
 @app.route("/booking", methods=["GET", "POST"])
 def booking():
-    """Форма бронирования"""
     if request.method == "POST":
         name = request.form.get("name")
         phone = request.form.get("phone")
@@ -197,31 +193,24 @@ def booking():
         return render_template("booking.html", success="Спасибо! Мы свяжемся с вами.")
     return render_template("booking.html")
 
-
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
-    """Страница входа в админку"""
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-        if username == os.getenv("ADMIN_USER", "admin") and password == os.getenv("ADMIN_PASS", "1"):
+        if request.form.get("username") == os.getenv("ADMIN_USER", "admin") and \
+           request.form.get("password") == os.getenv("ADMIN_PASS", "1"):
             session["admin_logged_in"] = True
             return redirect(url_for("admin_dashboard"))
         flash("❌ Неверный логин или пароль", "error")
     return render_template("admin/login.html")
 
-
 @app.route("/admin")
 def admin_dashboard():
-    """Главная админки — список бронирований"""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     return render_template("admin/dashboard.html", bookings=BOOKINGS)
 
-
 @app.route("/admin/knowledge", methods=["GET", "POST"])
 def knowledge_edit():
-    """Редактирование базы знаний"""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
 
@@ -230,56 +219,36 @@ def knowledge_edit():
         question = request.form.get("question", "").strip().lower()
         answer = request.form.get("answer", "").strip()
 
-        if action == "add":
-            if not question or not answer:
-                flash("❌ Вопрос и ответ не могут быть пустыми", "error")
-            elif question in KNOWLEDGE_BASE:
-                flash("❌ Вопрос уже существует", "error")
-            else:
-                KNOWLEDGE_BASE[question] = answer
-                save_knowledge_base()
-                flash("✅ Вопрос добавлен", "success")
+        if action == "add" and question and answer and question not in KNOWLEDGE_BASE:
+            KNOWLEDGE_BASE[question] = answer
+            save_knowledge_base()
+            flash("✅ Вопрос добавлен", "success")
 
-        elif action == "edit":
-            if question in KNOWLEDGE_BASE and answer:
-                KNOWLEDGE_BASE[question] = answer
-                save_knowledge_base()
-                flash("✅ Ответ обновлён", "success")
-            else:
-                flash("❌ Неверные данные", "error")
+        elif action == "edit" and question in KNOWLEDGE_BASE and answer:
+            KNOWLEDGE_BASE[question] = answer
+            save_knowledge_base()
+            flash("✅ Ответ обновлён", "success")
 
-        elif action == "delete":
-            if question in KNOWLEDGE_BASE:
-                del KNOWLEDGE_BASE[question]
-                save_knowledge_base()
-                flash("✅ Вопрос удалён", "success")
-            else:
-                flash("❌ Вопрос не найден", "error")
+        elif action == "delete" and question in KNOWLEDGE_BASE:
+            del KNOWLEDGE_BASE[question]
+            save_knowledge_base()
+            flash("✅ Вопрос удалён", "success")
 
     return render_template("admin/knowledge_edit.html", knowledge=KNOWLEDGE_BASE)
 
-
 @app.route("/admin/logout")
 def admin_logout():
-    """Выход из админки"""
     session.pop("admin_logged_in", None)
     flash("Вы вышли из админки", "info")
     return redirect(url_for("index"))
 
-
 @app.route("/static/<path:path>")
 def send_static(path):
-    """Раздача статики"""
     return send_from_directory("static", path)
-
 
 @app.route("/birthday_calc")
 def birthday_calc():
-    """Калькулятор дня рождения"""
     return render_template("birthday_calc.html")
 
-
-# --- Запуск приложения ---
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=5000, debug=False)

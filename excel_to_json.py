@@ -2,70 +2,101 @@
 import pandas as pd
 import json
 import os
+import re
 
-# Пути
-file_path = "knowledge_base.xlsx"
-sheet_name = 0  # Читаем первый лист
+def clean_text(text):
+    """Очистка текста от лишних пробелов и специальных символов"""
+    if pd.isna(text) or text == 'None':
+        return ""
+    text = str(text).strip()
+    # Заменяем множественные переносы строк на одинарные
+    text = re.sub(r'\n+', '\n', text)
+    # Удаляем лишние пробелы
+    text = re.sub(r'[^\S\n]+', ' ', text)
+    return text
 
-# Проверка существования файла
-if not os.path.exists(file_path):
-    print(f"❌ Файл не найден: {file_path}")
-    print("Убедитесь, что файл лежит в папке c:\\funland-bot\\")
-    exit()
+def process_excel_to_json(file_path, output_file):
+    try:
+        # Чтение Excel файла
+        df = pd.read_excel(
+            file_path,
+            sheet_name=0,
+            engine='openpyxl',
+            dtype=str,
+            keep_default_na=False
+        )
 
-try:
-    # Читаем Excel (указываем engine!)
-    df = pd.read_excel(file_path, sheet_name=sheet_name, engine='openpyxl')
+        # Поиск столбцов
+        key_col, value_col = None, None
+        for col in df.columns:
+            col_lower = str(col).lower()
+            if "вопрос" in col_lower or "key" in col_lower:
+                key_col = col
+            if "ответ" in col_lower or "value" in col_lower:
+                value_col = col
 
-    # Смотрим, какие столбцы есть
-    print(f"✅ Доступные столбцы: {list(df.columns)}")
+        if not key_col or not value_col:
+            available_cols = "\n".join(f"- {col}" for col in df.columns)
+            raise ValueError(
+                f"Не найдены нужные столбцы.\nДоступные столбцы:\n{available_cols}\n"
+                f"Ищем столбцы, содержащие 'вопрос'/'key' и 'ответ'/'value'"
+            )
 
-    # Нормализуем названия столбцов: убираем пробелы, делаем lowercase
-    df.columns = [col.strip().replace(" ", "").upper() for col in df.columns]
+        # Обработка данных
+        knowledge_dict = {}
+        current_key = None
+        current_value = []
 
-    # Теперь ищем нужные столбцы по шаблону
-    key_col = None
-    value_col = None
+        for _, row in df.iterrows():
+            key = clean_text(row[key_col])
+            value = clean_text(row[value_col])
 
-    for col in df.columns:
-        if "ВОПРОС" in col:
-            key_col = col
-        if "ОТВЕТ" in col:
-            value_col = col
+            if key:  # Новая запись
+                if current_key and current_value:
+                    full_answer = "\n".join(filter(None, current_value))
+                    knowledge_dict[current_key.lower()] = full_answer
+                current_key = key
+                current_value = [value] if value else []
+            elif value:  # Продолжение предыдущего ответа
+                current_value.append(value)
 
-    if not key_col:
-        print("❌ Не найден столбец с 'ВОПРОС'")
-        print("Проверьте, что в Excel есть столбец с названием, содержащим 'ВОПРОС'")
-        exit()
-    if not value_col:
-        print("❌ Не найден столбец с 'ОТВЕТ'")
-        print("Проверьте, что в Excel есть столбец с названием, содержащим 'ОТВЕТ'")
-        exit()
+        # Добавляем последнюю запись
+        if current_key and current_value:
+            full_answer = "\n".join(filter(None, current_value))
+            knowledge_dict[current_key.lower()] = full_answer
 
-    # Переименовываем для удобства
-    df.rename(columns={key_col: "key", value_col: "value"}, inplace=True)
+        # Сохранение в JSON
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(knowledge_dict, f, ensure_ascii=False, indent=4, sort_keys=True)
 
-    # Удаляем пустые строки
-    df.dropna(subset=["key"], inplace=True)
+        print(f"✅ Успешно создан {output_file}")
+        print(f"📊 Статистика:")
+        print(f"- Всего вопросов: {len(knowledge_dict)}")
+        print(f"- Пример первого вопроса: {next(iter(knowledge_dict))[:50]}...")
 
-    # Создаём словарь: вопрос → ответ
-    knowledge_dict = {}
-    for _, row in df.iterrows():
-        question = str(row["key"]).strip().lower()
-        answer = str(row["value"]).strip()
-        if question and answer:
-            knowledge_dict[question] = answer
+    except Exception as e:
+        print(f"❌ Ошибка при обработке файла:")
+        print(f"Тип ошибки: {type(e).__name__}")
+        print(f"Сообщение: {str(e)}")
+        if hasattr(e, 'args') and e.args:
+            print(f"Детали: {e.args}")
+        return False
+    return True
 
-    # Сохраняем в JSON
-    with open("knowledge_base.json", "w", encoding="utf-8") as f:
-        json.dump(knowledge_dict, f, ensure_ascii=False, indent=4)
+if __name__ == "__main__":
+    file_path = "knowledge_base.xlsx"
+    output_file = "knowledge_base.json"
+    
+    if not os.path.exists(file_path):
+        print(f"❌ Файл не найден: {file_path}")
+        print("Убедитесь, что файл находится в правильной директории")
+        exit(1)
 
-    print(f"✅ Успешно конвертировано! Сохранено в knowledge_base.json")
-    print(f"📦 Количество вопросов: {len(knowledge_dict)}")
-
-except Exception as e:
-    print(f"❌ Ошибка: {e}")
-    if "bad magic number" in str(e):
-        print("💡 Возможно, файл не .xlsx, а .xls. Сохраните как 'Книга Excel (*.xlsx)'")
-    elif "openpyxl" in str(e):
-        print("💡 Установите: pip install openpyxl")
+    success = process_excel_to_json(file_path, output_file)
+    if not success:
+        print("\n💡 Советы по исправлению:")
+        print("1. Проверьте названия столбцов в Excel-файле")
+        print("2. Убедитесь, что нет объединенных ячеек")
+        print("3. Проверьте, что файл не защищен паролем")
+        print("4. Попробуйте открыть и сохранить файл вручную")
+        exit(1)

@@ -1,0 +1,31 @@
+<!-- templates/admin/knowledge_edit.html -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактирование базы знаний</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .kb-entry { margin: 15px 0; }
+        .kb-entry label { display: block; margin: 5px 0; font-weight: 500; }
+        .kb-entry textarea { width: 100%; height: 100px; }
+        .btn-save { background: #28a745; padding: 10px 20px; }
+        .btn-back { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🛠️ Редактирование базы знаний</h2>
+        <form method="POST" action="/admin/knowledge/save">
+            {% for key, value in knowledge.items() %}
+            <div class="kb-entry">
+                <label>{{ key }}:</label>
+                <textarea name="{{ key }}" placeholder="Введите ответ...">{{ value }}</textarea>
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn-save">💾 Сохранить</button>
+        </form>
+        <a href="/admin" class="btn-back">← Назад</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,11 @@
+1. Подготовить knowledge_base.xlsx (2 столбца, правильное форматирование)
+2. Сохранить как .xlsx (не .csv!)
+3. Закрыть Excel
+4. Запустить python excel_to_json.py
+5. Проверить knowledge_base.json
+6. Запустить python web_app.py
+7. Проверить в чате: привет, меню, vr, выездные мероприятия
+
+
+
+python csv_to_json.py   // из цсв в джисон
