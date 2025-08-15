@@ -13,7 +13,7 @@ load_dotenv()
 
 # --- Создание приложения ---
 app = Flask(__name__)
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key-for-funland-bot")
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "super-secret-key-for-d-space-bot")
 
 # --- Глобальные переменные ---
 KNOWLEDGE_BASE = {}
@@ -39,21 +39,18 @@ def load_knowledge_base():
         except Exception as e:
             print(f"❌ Ошибка загрузки базы знаний: {e}")
     else:
-        print("⚠️ Файл knowledge_base.json не найден. Будет создан при первом сохранении.")
+        print("⚠️ Файл knowledge_base.json не найден.")
 
 def save_knowledge_base():
     """Сохраняет базу знаний в JSON + резервная копия"""
     try:
-        # Создаём папку backups
         if not os.path.exists(BACKUPS_DIR):
             os.makedirs(BACKUPS_DIR)
-        # Создаём бэкап
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = os.path.join(BACKUPS_DIR, f"knowledge_base_{timestamp}.json")
         shutil.copy2(KNOWLEDGE_FILE, backup_path)
         print(f"🔄 Создана резервная копия: {backup_path}")
 
-        # Сохраняем
         with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
             json.dump(KNOWLEDGE_BASE, f, ensure_ascii=False, indent=4)
         print("✅ База знаний сохранена")
@@ -100,7 +97,7 @@ def call_yandex_gpt(prompt, history=None):
         "x-folder-id": os.getenv("YANDEX_FOLDER_ID"),
         "Content-Type": "application/json"
     }
-    messages = [{"role": "system", "text": "Ты — дружелюбный консультант. Отвечай кратко, структурированно, с эмодзи."}]
+    messages = [{"role": "system", "text": "Ты — дружелюбный консультант D-Space. Отвечай кратко, структурированно, с эмодзи. Учитывай контекст диалога."}]
     if history:
         messages.extend(history)
     messages.append({"role": "user", "text": prompt})
@@ -110,7 +107,7 @@ def call_yandex_gpt(prompt, history=None):
         "completionOptions": {
             "stream": False,
             "temperature": 0.3,
-            "maxTokens": 1000  # Число, не строка!
+            "maxTokens": 1000
         },
         "messages": messages
     }
@@ -149,53 +146,28 @@ def index():
 def ask():
     """Обработка вопроса пользователя"""
     data = request.get_json()
-    question = data.get("question", "").strip().lower()
+    question = data.get("question", "").strip().lower().rstrip("?")  # Удаляем ? в конце
     user_id = data.get("user_id", "default")
 
     if user_id not in conversation_history:
         conversation_history[user_id] = []
 
-    # Поиск в базе знаний
-    for key in KNOWLEDGE_BASE:
-        if key in question:
-            answer = KNOWLEDGE_BASE[key]
-            conversation_history[user_id].append({"role": "user", "text": question})
-            conversation_history[user_id].append({"role": "assistant", "text": answer})
-            log_interaction(question, answer, "knowledge_base")
-            return jsonify({"answer": answer})
-
-    # Запрос к Yandex GPT
-    gpt_answer = call_yandex_gpt(question, conversation_history[user_id])
     conversation_history[user_id].append({"role": "user", "text": question})
+    if len(conversation_history[user_id]) > 10:
+        conversation_history[user_id] = conversation_history[user_id][-10:]
+
+    # --- 🔥 ТОЧНОЕ СОВПАДЕНИЕ КЛЮЧА ---
+    if question in KNOWLEDGE_BASE:
+        answer = KNOWLEDGE_BASE[question]
+        conversation_history[user_id].append({"role": "assistant", "text": answer})
+        log_interaction(question, answer, "knowledge_base")
+        return jsonify({"answer": answer})
+
+    # --- 🔥 ЗАПРОС К YANDEX GPT ---
+    gpt_answer = call_yandex_gpt(question, conversation_history[user_id])
     conversation_history[user_id].append({"role": "assistant", "text": gpt_answer})
     log_interaction(question, gpt_answer, "yandex_gpt")
     return jsonify({"answer": gpt_answer})
-
-
-@app.route("/booking", methods=["GET", "POST"])
-def booking():
-    """Форма бронирования"""
-    if request.method == "POST":
-        name = request.form.get("name")
-        phone = request.form.get("phone")
-        date = request.form.get("date")
-        guests = request.form.get("guests")
-        event_type = request.form.get("event_type")
-        if not all([name, phone, date, guests, event_type]):
-            return render_template("booking.html", error="Заполните все поля!")
-        new_booking = {
-            "name": name,
-            "phone": phone,
-            "date": date,
-            "guests": guests,
-            "event_type": event_type,
-            "created_at": datetime.now().strftime("%d.%m.%Y %H:%M")
-        }
-        BOOKINGS.append(new_booking)
-        with open(BOOKINGS_FILE, "w", encoding="utf-8") as f:
-            json.dump(BOOKINGS, f, ensure_ascii=False, indent=4)
-        return render_template("booking.html", success="Спасибо! Мы свяжемся с вами.")
-    return render_template("booking.html")
 
 
 @app.route("/admin/login", methods=["GET", "POST"])
@@ -256,6 +228,9 @@ def knowledge_edit():
             else:
                 flash("❌ Вопрос не найден", "error")
 
+    # Перезагружаем базу из файла
+    load_knowledge_base()
+
     return render_template("admin/knowledge_edit.html", knowledge=KNOWLEDGE_BASE)
 
 
@@ -271,6 +246,32 @@ def admin_logout():
 def send_static(path):
     """Раздача статики"""
     return send_from_directory("static", path)
+
+
+@app.route("/booking", methods=["GET", "POST"])
+def booking():
+    """Форма бронирования"""
+    if request.method == "POST":
+        name = request.form.get("name")
+        phone = request.form.get("phone")
+        date = request.form.get("date")
+        guests = request.form.get("guests")
+        event_type = request.form.get("event_type")
+        if not all([name, phone, date, guests, event_type]):
+            return render_template("booking.html", error="Заполните все поля!")
+        new_booking = {
+            "name": name,
+            "phone": phone,
+            "date": date,
+            "guests": guests,
+            "event_type": event_type,
+            "created_at": datetime.now().strftime("%d.%m.%Y %H:%M")
+        }
+        BOOKINGS.append(new_booking)
+        with open(BOOKINGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(BOOKINGS, f, ensure_ascii=False, indent=4)
+        return render_template("booking.html", success="Спасибо! Мы свяжемся с вами.")
+    return render_template("booking.html")
 
 
 @app.route("/birthday_calc")

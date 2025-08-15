@@ -7,6 +7,15 @@ import shutil
 from datetime import datetime
 from dotenv import load_dotenv
 import requests
+import socket
+import logging
+
+# --- Настройка логирования ---
+logging.basicConfig(
+    filename='audit.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 # --- Загрузка переменных окружения ---
 load_dotenv()
@@ -21,6 +30,9 @@ BOOKINGS = []
 conversation_history = {}
 LOG_FILE = "bot_log.json"
 BACKUPS_DIR = "backups"
+UPLOAD_FOLDER = "uploads"
+os.makedirs(BACKUPS_DIR, exist_ok=True)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # --- Пути ---
 KNOWLEDGE_FILE = "knowledge_base.json"
@@ -36,26 +48,32 @@ def load_knowledge_base():
             with open(KNOWLEDGE_FILE, "r", encoding="utf-8") as f:
                 KNOWLEDGE_BASE = json.load(f)
             print(f"✅ Загружено {len(KNOWLEDGE_BASE)} вопросов из {KNOWLEDGE_FILE}")
+            logging.info(f"Загружено {len(KNOWLEDGE_BASE)} вопросов")
         except Exception as e:
             print(f"❌ Ошибка загрузки базы знаний: {e}")
+            logging.error(f"Ошибка загрузки базы знаний: {e}")
     else:
         print("⚠️ Файл knowledge_base.json не найден.")
+        logging.warning("Файл knowledge_base.json не найден.")
 
 def save_knowledge_base():
     """Сохраняет базу знаний в JSON + резервная копия"""
     try:
-        if not os.path.exists(BACKUPS_DIR):
-            os.makedirs(BACKUPS_DIR)
+        # Резервная копия
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = os.path.join(BACKUPS_DIR, f"knowledge_base_{timestamp}.json")
         shutil.copy2(KNOWLEDGE_FILE, backup_path)
         print(f"🔄 Создана резервная копия: {backup_path}")
+        logging.info(f"Создана резервная копия: {backup_path}")
 
+        # Сохранение
         with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
             json.dump(KNOWLEDGE_BASE, f, ensure_ascii=False, indent=4)
         print("✅ База знаний сохранена")
+        logging.info("База знаний сохранена")
     except Exception as e:
         print(f"❌ Ошибка сохранения базы: {e}")
+        logging.error(f"Ошибка сохранения базы знаний: {e}")
 
 def load_bookings():
     """Загружает бронирования"""
@@ -65,13 +83,15 @@ def load_bookings():
             with open(BOOKINGS_FILE, "r", encoding="utf-8") as f:
                 BOOKINGS = json.load(f)
             print(f"✅ Загружено {len(BOOKINGS)} бронирований")
+            logging.info(f"Загружено {len(BOOKINGS)} бронирований")
         except Exception as e:
             print(f"❌ Ошибка загрузки бронирований: {e}")
+            logging.error(f"Ошибка загрузки бронирований: {e}")
     else:
         BOOKINGS = []
 
 def log_interaction(question, answer, source):
-    """Логирует диалог"""
+    """Логирует диалог в bot_log.json"""
     log_entry = {
         "timestamp": datetime.now().isoformat(),
         "question": question,
@@ -82,12 +102,16 @@ def log_interaction(question, answer, source):
         logs = []
         if os.path.exists(LOG_FILE):
             with open(LOG_FILE, "r", encoding="utf-8") as f:
-                logs = json.load(f)
+                content = f.read().strip()
+                if content:
+                    logs = json.loads(content)
         logs.append(log_entry)
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             json.dump(logs, f, ensure_ascii=False, indent=4)
+        logging.info(f"Лог: '{question}' → {source}")
     except Exception as e:
         print(f"❌ Ошибка логирования: {e}")
+        logging.error(f"Ошибка логирования: {e}")
 
 def call_yandex_gpt(prompt, history=None):
     """Вызов Yandex GPT с повторными попытками"""
@@ -123,9 +147,11 @@ def call_yandex_gpt(prompt, history=None):
                 return "❌ Ошибка параметров. Проверьте folder_id."
             else:
                 print(f"⚠️ Ошибка GPT (попытка {attempt + 1}): {response.status_code}")
+                logging.warning(f"Ошибка GPT: {response.status_code}")
                 time.sleep(1)
         except Exception as e:
             print(f"⚠️ Ошибка подключения (попытка {attempt + 1}): {str(e)}")
+            logging.error(f"Ошибка подключения к GPT: {str(e)}")
             time.sleep(1)
     return "❌ Не удалось получить ответ. Попробуйте позже."
 
@@ -133,6 +159,16 @@ def call_yandex_gpt(prompt, history=None):
 load_knowledge_base()
 load_bookings()
 
+# --- Вспомогательная функция: получить локальный IP ---
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "192.168.0.100"
 
 # --- Маршруты ---
 
@@ -141,12 +177,11 @@ def index():
     """Главная страница чата"""
     return render_template("index.html")
 
-
 @app.route("/ask", methods=["POST"])
 def ask():
     """Обработка вопроса пользователя"""
     data = request.get_json()
-    question = data.get("question", "").strip().lower().rstrip("?")  # Удаляем ? в конце
+    question = data.get("question", "").strip().lower().rstrip("?")
     user_id = data.get("user_id", "default")
 
     if user_id not in conversation_history:
@@ -156,19 +191,18 @@ def ask():
     if len(conversation_history[user_id]) > 10:
         conversation_history[user_id] = conversation_history[user_id][-10:]
 
-    # --- 🔥 ТОЧНОЕ СОВПАДЕНИЕ КЛЮЧА ---
+    # Поиск в базе знаний
     if question in KNOWLEDGE_BASE:
         answer = KNOWLEDGE_BASE[question]
         conversation_history[user_id].append({"role": "assistant", "text": answer})
         log_interaction(question, answer, "knowledge_base")
         return jsonify({"answer": answer})
 
-    # --- 🔥 ЗАПРОС К YANDEX GPT ---
+    # Запрос к Yandex GPT
     gpt_answer = call_yandex_gpt(question, conversation_history[user_id])
     conversation_history[user_id].append({"role": "assistant", "text": gpt_answer})
     log_interaction(question, gpt_answer, "yandex_gpt")
     return jsonify({"answer": gpt_answer})
-
 
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
@@ -178,10 +212,11 @@ def admin_login():
         password = request.form.get("password")
         if username == os.getenv("ADMIN_USER", "admin") and password == os.getenv("ADMIN_PASS", "1"):
             session["admin_logged_in"] = True
+            logging.info("Администратор вошёл в систему")
             return redirect(url_for("admin_dashboard"))
         flash("❌ Неверный логин или пароль", "error")
+        logging.warning("Неудачная попытка входа в админку")
     return render_template("admin/login.html")
-
 
 @app.route("/admin")
 def admin_dashboard():
@@ -189,7 +224,6 @@ def admin_dashboard():
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     return render_template("admin/dashboard.html", bookings=BOOKINGS)
-
 
 @app.route("/admin/knowledge", methods=["GET", "POST"])
 def knowledge_edit():
@@ -210,12 +244,14 @@ def knowledge_edit():
             else:
                 KNOWLEDGE_BASE[question] = answer
                 save_knowledge_base()
+                logging.info(f"Добавлен вопрос: '{question}'")
                 flash("✅ Вопрос добавлен", "success")
 
         elif action == "edit":
             if question in KNOWLEDGE_BASE and answer:
                 KNOWLEDGE_BASE[question] = answer
                 save_knowledge_base()
+                logging.info(f"Изменён вопрос: '{question}'")
                 flash("✅ Ответ обновлён", "success")
             else:
                 flash("❌ Неверные данные", "error")
@@ -224,29 +260,82 @@ def knowledge_edit():
             if question in KNOWLEDGE_BASE:
                 del KNOWLEDGE_BASE[question]
                 save_knowledge_base()
+                logging.info(f"Удалён вопрос: '{question}'")
                 flash("✅ Вопрос удалён", "success")
             else:
                 flash("❌ Вопрос не найден", "error")
 
-    # Перезагружаем базу из файла
     load_knowledge_base()
-
     return render_template("admin/knowledge_edit.html", knowledge=KNOWLEDGE_BASE)
 
+@app.route("/admin/logs")
+def view_logs():
+    """Просмотр истории диалогов"""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+
+    logs = []
+    if os.path.exists(LOG_FILE):
+        try:
+            with open(LOG_FILE, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+                if content:
+                    logs = json.loads(content)
+            logs = sorted(logs, key=lambda x: x["timestamp"], reverse=True)
+        except Exception as e:
+            logging.error(f"Ошибка чтения логов: {e}")
+            flash("❌ Ошибка загрузки логов", "error")
+
+    return render_template("admin/logs.html", logs=logs)
+
+@app.route("/admin/edit_response", methods=["POST"])
+def edit_response():
+    """Редактирование ответа из логов — добавление в базу знаний"""
+    if not session.get("admin_logged_in"):
+        return jsonify({"status": "error", "message": "Доступ запрещён"})
+
+    question = request.form.get("question", "").strip().lower()
+    new_answer = request.form.get("answer", "").strip()
+
+    # Декодируем Unicode-эскейпы
+    import json as json_module
+    try:
+        new_answer = json_module.loads(f'"{new_answer}"')
+    except:
+        pass
+
+    if not question or not new_answer:
+        return jsonify({"status": "error", "message": "Вопрос и ответ не могут быть пустыми"})
+
+    # Обновляем базу знаний
+    KNOWLEDGE_BASE[question] = new_answer
+    save_knowledge_base()
+    logging.info(f"Ответ обновлён через админку: '{question}'")
+
+    return jsonify({"status": "success", "message": "Ответ обновлён и сохранён в базе знаний"})
+
+@app.route("/admin/export_logs")
+def export_logs():
+    """Экспорт логов диалогов"""
+    if not session.get("admin_logged_in"):
+        return redirect(url_for("admin_login"))
+    if os.path.exists(LOG_FILE):
+        return send_from_directory(".", "bot_log.json", as_attachment=True)
+    flash("❌ Файл логов не найден", "error")
+    return redirect(url_for("view_logs"))
 
 @app.route("/admin/logout")
 def admin_logout():
     """Выход из админки"""
     session.pop("admin_logged_in", None)
     flash("Вы вышли из админки", "info")
+    logging.info("Администратор вышел из системы")
     return redirect(url_for("index"))
-
 
 @app.route("/static/<path:path>")
 def send_static(path):
     """Раздача статики"""
     return send_from_directory("static", path)
-
 
 @app.route("/booking", methods=["GET", "POST"])
 def booking():
@@ -270,17 +359,27 @@ def booking():
         BOOKINGS.append(new_booking)
         with open(BOOKINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(BOOKINGS, f, ensure_ascii=False, indent=4)
+        logging.info(f"Новая бронь: {name}, {phone}")
         return render_template("booking.html", success="Спасибо! Мы свяжемся с вами.")
     return render_template("booking.html")
-
 
 @app.route("/birthday_calc")
 def birthday_calc():
     """Калькулятор дня рождения"""
     return render_template("birthday_calc.html")
 
-
 # --- Запуск приложения ---
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    host = "0.0.0.0"
+    local_ip = get_local_ip()
+
+    print(f"✅ Загружено {len(KNOWLEDGE_BASE)} вопросов из {KNOWLEDGE_FILE}")
+    print(f"✅ Загружено {len(BOOKINGS)} бронирований")
+    print("🔄 База знаний обновлена!")
+    print(f"* Running on all addresses ({host})")
+    print(f"* Running on http://127.0.0.1:{port}")
+    print(f"* Running on http://{local_ip}:{port}")
+    print("Press CTRL+C to quit")
+
+    app.run(host=host, port=port, debug=False)

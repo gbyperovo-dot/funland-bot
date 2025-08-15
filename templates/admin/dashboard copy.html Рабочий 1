@@ -77,4 +77,3 @@
 </body>
 </html>
 <a href="/admin/knowledge" class="btn">🛠️ Редактировать базу знаний</a>
-<a href="/admin/logs" class="btn btn-info btn-sm">📜 История диалогов</a>
