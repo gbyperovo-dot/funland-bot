@@ -30,9 +30,7 @@ BOOKINGS = []
 conversation_history = {}
 LOG_FILE = "bot_log.json"
 BACKUPS_DIR = "backups"
-UPLOAD_FOLDER = "uploads"
 os.makedirs(BACKUPS_DIR, exist_ok=True)
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # --- Пути ---
 KNOWLEDGE_FILE = "knowledge_base.json"
@@ -64,7 +62,6 @@ def save_knowledge_base():
         backup_path = os.path.join(BACKUPS_DIR, f"knowledge_base_{timestamp}.json")
         shutil.copy2(KNOWLEDGE_FILE, backup_path)
         print(f"🔄 Создана резервная копия: {backup_path}")
-        logging.info(f"Создана резервная копия: {backup_path}")
 
         # Сохранение
         with open(KNOWLEDGE_FILE, "w", encoding="utf-8") as f:
@@ -108,10 +105,8 @@ def log_interaction(question, answer, source):
         logs.append(log_entry)
         with open(LOG_FILE, "w", encoding="utf-8") as f:
             json.dump(logs, f, ensure_ascii=False, indent=4)
-        logging.info(f"Лог: '{question}' → {source}")
     except Exception as e:
         print(f"❌ Ошибка логирования: {e}")
-        logging.error(f"Ошибка логирования: {e}")
 
 def call_yandex_gpt(prompt, history=None):
     """Вызов Yandex GPT с повторными попытками"""
@@ -121,7 +116,7 @@ def call_yandex_gpt(prompt, history=None):
         "x-folder-id": os.getenv("YANDEX_FOLDER_ID"),
         "Content-Type": "application/json"
     }
-    messages = [{"role": "system", "text": "Ты — дружелюбный консультант D-Space. Отвечай кратко, структурированно, с эмодзи. Учитывай контекст диалога."}]
+    messages = [{"role": "system", "text": "Ты — дружелюбный консультант D-Space. Отвечай кратко, структурированно, с эмодзи."}]
     if history:
         messages.extend(history)
     messages.append({"role": "user", "text": prompt})
@@ -147,11 +142,9 @@ def call_yandex_gpt(prompt, history=None):
                 return "❌ Ошибка параметров. Проверьте folder_id."
             else:
                 print(f"⚠️ Ошибка GPT (попытка {attempt + 1}): {response.status_code}")
-                logging.warning(f"Ошибка GPT: {response.status_code}")
                 time.sleep(1)
         except Exception as e:
             print(f"⚠️ Ошибка подключения (попытка {attempt + 1}): {str(e)}")
-            logging.error(f"Ошибка подключения к GPT: {str(e)}")
             time.sleep(1)
     return "❌ Не удалось получить ответ. Попробуйте позже."
 
@@ -159,16 +152,6 @@ def call_yandex_gpt(prompt, history=None):
 load_knowledge_base()
 load_bookings()
 
-# --- Вспомогательная функция: получить локальный IP ---
-def get_local_ip():
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return "192.168.0.100"
 
 # --- Маршруты ---
 
@@ -176,6 +159,7 @@ def get_local_ip():
 def index():
     """Главная страница чата"""
     return render_template("index.html")
+
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -187,6 +171,7 @@ def ask():
     if user_id not in conversation_history:
         conversation_history[user_id] = []
 
+    # Добавляем вопрос в историю
     conversation_history[user_id].append({"role": "user", "text": question})
     if len(conversation_history[user_id]) > 10:
         conversation_history[user_id] = conversation_history[user_id][-10:]
@@ -204,6 +189,7 @@ def ask():
     log_interaction(question, gpt_answer, "yandex_gpt")
     return jsonify({"answer": gpt_answer})
 
+
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     """Страница входа в админку"""
@@ -218,12 +204,14 @@ def admin_login():
         logging.warning("Неудачная попытка входа в админку")
     return render_template("admin/login.html")
 
+
 @app.route("/admin")
 def admin_dashboard():
     """Главная админки — список бронирований"""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     return render_template("admin/dashboard.html", bookings=BOOKINGS)
+
 
 @app.route("/admin/knowledge", methods=["GET", "POST"])
 def knowledge_edit():
@@ -265,8 +253,11 @@ def knowledge_edit():
             else:
                 flash("❌ Вопрос не найден", "error")
 
+    # Перезагружаем базу из файла
     load_knowledge_base()
+
     return render_template("admin/knowledge_edit.html", knowledge=KNOWLEDGE_BASE)
+
 
 @app.route("/admin/logs")
 def view_logs():
@@ -287,6 +278,7 @@ def view_logs():
             flash("❌ Ошибка загрузки логов", "error")
 
     return render_template("admin/logs.html", logs=logs)
+
 
 @app.route("/admin/edit_response", methods=["POST"])
 def edit_response():
@@ -314,6 +306,7 @@ def edit_response():
 
     return jsonify({"status": "success", "message": "Ответ обновлён и сохранён в базе знаний"})
 
+
 @app.route("/admin/export_logs")
 def export_logs():
     """Экспорт логов диалогов"""
@@ -324,6 +317,7 @@ def export_logs():
     flash("❌ Файл логов не найден", "error")
     return redirect(url_for("view_logs"))
 
+
 @app.route("/admin/logout")
 def admin_logout():
     """Выход из админки"""
@@ -332,10 +326,12 @@ def admin_logout():
     logging.info("Администратор вышел из системы")
     return redirect(url_for("index"))
 
+
 @app.route("/static/<path:path>")
 def send_static(path):
     """Раздача статики"""
     return send_from_directory("static", path)
+
 
 @app.route("/booking", methods=["GET", "POST"])
 def booking():
@@ -363,10 +359,24 @@ def booking():
         return render_template("booking.html", success="Спасибо! Мы свяжемся с вами.")
     return render_template("booking.html")
 
+
 @app.route("/birthday_calc")
 def birthday_calc():
     """Калькулятор дня рождения"""
     return render_template("birthday_calc.html")
+
+
+# --- Вспомогательная функция: получить локальный IP ---
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "192.168.0.100"
+
 
 # --- Запуск приложения ---
 if __name__ == "__main__":

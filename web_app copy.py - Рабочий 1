@@ -297,6 +297,13 @@ def edit_response():
     question = request.form.get("question", "").strip().lower()
     new_answer = request.form.get("answer", "").strip()
 
+    # Декодируем Unicode-эскейпы
+    import json as json_module
+    try:
+        new_answer = json_module.loads(f'"{new_answer}"')
+    except:
+        pass
+
     if not question or not new_answer:
         return jsonify({"status": "error", "message": "Вопрос и ответ не могут быть пустыми"})
 
