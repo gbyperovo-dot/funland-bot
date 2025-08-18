@@ -7,6 +7,63 @@
     <!-- ✅ Исправлено: убран пробел в URL -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Увеличенное окно чата */
+        .chat-box {
+            height: 500px;
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            width: 100%;
+            max-width: 95vw;
+            margin: 0 auto;
+            box-sizing: border-box;
+            overflow-x: hidden;
+        }
+
+        /* Контекстные подсказки — с переносом и стилями */
+        .context-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 5px 0 10px;
+            padding: 0;
+        }
+        .context-suggestions button {
+            font-size: 0.85rem;
+            padding: 6px 10px;
+            background: #e9ecef;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .context-suggestions button:hover {
+            background: #0d6efd;
+            color: white;
+        }
+
+        /* Стиль для оценки */
+        .feedback {
+            margin: 5px 0;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .feedback button {
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            margin: 0 2px;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+        .feedback button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -19,7 +76,7 @@
             <button onclick="clearChat()" class="btn-clear">🗑️ Очистить</button>
         </div>
 
-        <!-- Подсказки -->
+        <!-- Статическое меню (подсказки) -->
         <div id="suggestions" class="suggestions">
             <button onclick="ask('vr')">🎮 VR-зоны</button>
             <button onclick="ask('батуты')">🏀 Батутный центр</button>
@@ -49,7 +106,6 @@
                 </label>
                 <div id="dynamicForm"></div>
                 <div class="result" id="result"></div>
-                <!-- ✅ Кнопка "Рассчитать" -->
                 <button type="button" onclick="calculate()">Рассчитать</button>
             </form>
         </div>
@@ -57,7 +113,6 @@
 
     <!-- Ссылки внизу -->
     <p style="text-align: center; margin-top: 15px; font-size: 14px; color: #6c757d;">
-        
         <a href="/admin/login" style="color: #dc3545; margin: 0 10px;">🔐 Админка</a>
     </p>
 
@@ -65,6 +120,7 @@
         const chat = document.getElementById('chat');
         const suggestions = document.getElementById('suggestions');
         const modal = document.getElementById('calcModal');
+        let lastQuestion = "";
 
         // Приветствие по времени
         function getGreeting() {
@@ -78,6 +134,19 @@
             msg.className = `message ${role}`;
             msg.innerHTML = marked.parse(text);
             chat.appendChild(msg);
+
+            // ✅ Добавляем оценку после ответа бота
+            if (role === "assistant") {
+                const feedback = document.createElement('div');
+                feedback.className = "feedback";
+                feedback.innerHTML = `
+                    Был ли ответ полезен? 
+                    <button onclick="rate('${lastQuestion}', 'good')">👍</button>
+                    <button onclick="rate('${lastQuestion}', 'bad')">👎</button>
+                `;
+                chat.appendChild(feedback);
+            }
+
             chat.scrollTop = chat.scrollHeight;
         }
 
@@ -87,9 +156,9 @@
             const question = input.value.trim();
             if (!question) return;
 
+            lastQuestion = question;
             addMessage('user', question);
             input.value = '';
-            hideSuggestions();
 
             fetch('/ask', {
                 method: 'POST',
@@ -102,12 +171,11 @@
             .then(r => r.json())
             .then(data => {
                 addMessage('assistant', data.answer);
-                suggestions.style.display = "flex";
+                showSuggestionsForAnswer(data.answer);
             })
             .catch(err => {
                 console.error("Ошибка запроса:", err);
                 addMessage('assistant', '🚫 Ошибка подключения. Попробуйте позже.');
-                suggestions.style.display = "flex";
             });
         }
 
@@ -122,9 +190,82 @@
             window.location.href = '/booking';
         }
 
-        // Скрыть подсказки
-        function hideSuggestions() {
-            suggestions.style.display = "none";
+        // === Контекстные подсказки ===
+        const suggestionMap = {
+            "нерф": [
+                { text: "Правила", question: "правила безопасности в нерфе" },
+                { text: "Цены", question: "стоимость нерф-арены" },
+                { text: "Забронировать", question: "хочу забронировать нерф" }
+            ],
+            "батуты": [
+                { text: "Для детей?", question: "можно ли на батуты с маленькими детьми" },
+                { text: "Цены", question: "стоимость батутов" },
+                { text: "Забронировать", question: "забронировать батуты" }
+            ],
+            "день рождения": [
+                { text: "Пакеты", question: "пакеты на день рождения" },
+                { text: "Цены", question: "стоимость дня рождения" },
+                { text: "Забронировать", question: "хочу заказать день рождения" }
+            ],
+            "vr": [
+                { text: "Игры", question: "игры в vr" },
+                { text: "Цены", question: "стоимость vr" },
+                { text: "Забронировать", question: "забронировать vr" }
+            ]
+        };
+
+        function detectTopic(answer) {
+            const topics = Object.keys(suggestionMap);
+            const lowerAnswer = answer.toLowerCase();
+            for (let topic of topics) {
+                if (lowerAnswer.includes(topic)) {
+                    return topic;
+                }
+            }
+            return null;
+        }
+
+        function showSuggestionsForAnswer(answer) {
+            const topic = detectTopic(answer);
+            if (topic && suggestionMap[topic]) {
+                const fragment = document.createDocumentFragment();
+                suggestionMap[topic].forEach(btn => {
+                    const b = document.createElement("button");
+                    b.textContent = btn.text;
+                    b.onclick = () => {
+                        document.getElementById("user-input").value = btn.question;
+                        sendQuestion();
+                    };
+                    fragment.appendChild(b);
+                });
+
+                const contextDiv = document.createElement("div");
+                contextDiv.className = "context-suggestions";
+                contextDiv.appendChild(fragment);
+                chat.appendChild(contextDiv);
+                contextDiv.style.display = "flex";
+
+                // ✅ Прокрутка до конца ПОСЛЕ добавления подсказок
+                chat.scrollTop = chat.scrollHeight;
+            }
+        }
+
+        // === Оценка ответа ===
+        function rate(question, feedback) {
+            const buttons = document.querySelectorAll('.feedback button');
+            buttons.forEach(b => {
+                b.disabled = true;
+                b.style.opacity = "0.5";
+                b.style.cursor = "not-allowed";
+            });
+
+            fetch('/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question, feedback })
+            }).catch(err => {
+                console.error("Ошибка отправки оценки:", err);
+            });
         }
 
         // === Загрузка страницы ===
@@ -132,7 +273,6 @@
             addMessage('assistant', `**${getGreeting()}!**\n\nРады вас видеть в **D-Space**! 🎪\n\nЧем могу помочь?`);
             suggestions.style.display = "flex";
 
-            // ✅ Обработка сообщений из других окон (например, калькулятор)
             window.addEventListener("message", function(event) {
                 if (event.data.type === "birthday_calc") {
                     addMessage("assistant", `🧮 Рассчитана стоимость дня рождения: **${event.data.amount} ₽**\n\nХотите забронировать? Напишите: *«хочу забронировать»*`);
@@ -141,12 +281,8 @@
         };
 
         // === Калькулятор ===
-        function openCalculator() { 
-            modal.style.display = "block"; 
-        }
-        function closeCalculator() { 
-            modal.style.display = "none"; 
-        }
+        function openCalculator() { modal.style.display = "block"; }
+        function closeCalculator() { modal.style.display = "none"; }
 
         function updateForm() {
             const service = document.getElementById("service").value;
