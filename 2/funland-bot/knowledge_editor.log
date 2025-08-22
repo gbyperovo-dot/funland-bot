@@ -1,0 +1,128 @@
+2025-08-15 15:55:40,013 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.223:5000
+2025-08-15 15:55:40,013 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 15:55:40,018 - INFO -  * Restarting with stat
+2025-08-15 15:55:40,296 - WARNING -  * Debugger is active!
+2025-08-15 15:55:40,299 - INFO -  * Debugger PIN: 139-371-626
+2025-08-15 15:55:52,640 - INFO - 127.0.0.1 - - [15/Aug/2025 15:55:52] "GET / HTTP/1.1" 200 -
+2025-08-15 15:56:03,305 - INFO - 127.0.0.1 - - [15/Aug/2025 15:56:03] "GET /edit/vr HTTP/1.1" 200 -
+2025-08-15 15:56:05,878 - INFO - 127.0.0.1 - - [15/Aug/2025 15:56:05] "GET / HTTP/1.1" 200 -
+2025-08-15 16:06:09,332 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.223:5000
+2025-08-15 16:06:09,332 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 16:06:09,333 - INFO -  * Restarting with stat
+2025-08-15 16:06:09,620 - WARNING -  * Debugger is active!
+2025-08-15 16:06:09,623 - INFO -  * Debugger PIN: 139-371-626
+2025-08-15 16:06:17,368 - INFO - 127.0.0.1 - - [15/Aug/2025 16:06:17] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-15 16:06:17,511 - INFO - 127.0.0.1 - - [15/Aug/2025 16:06:17] "GET /?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2025-08-15 16:06:17,626 - INFO - 127.0.0.1 - - [15/Aug/2025 16:06:17] "GET /?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2025-08-15 16:06:18,006 - INFO - 127.0.0.1 - - [15/Aug/2025 16:06:18] "GET /?__debugger__=yes&cmd=resource&f=console.png&s=JZaYevKHGqU0QQTzfi7Y HTTP/1.1" 200 -
+2025-08-15 16:06:18,247 - INFO - 127.0.0.1 - - [15/Aug/2025 16:06:18] "GET /?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2025-08-15 16:06:25,568 - INFO - 127.0.0.1 - - [15/Aug/2025 16:06:25] "[35m[1mGET / HTTP/1.1[0m" 500 -
+2025-08-15 16:06:25,909 - INFO - 127.0.0.1 - - [15/Aug/2025 16:06:25] "[36mGET /?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2025-08-15 16:06:26,002 - INFO - 127.0.0.1 - - [15/Aug/2025 16:06:26] "[36mGET /?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2025-08-15 16:06:26,378 - INFO - 127.0.0.1 - - [15/Aug/2025 16:06:26] "[36mGET /?__debugger__=yes&cmd=resource&f=console.png&s=JZaYevKHGqU0QQTzfi7Y HTTP/1.1[0m" 304 -
+2025-08-15 16:14:20,022 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.223:5000
+2025-08-15 16:14:20,022 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 16:14:20,023 - INFO -  * Restarting with stat
+2025-08-15 16:14:20,315 - WARNING -  * Debugger is active!
+2025-08-15 16:14:20,318 - INFO -  * Debugger PIN: 139-371-626
+2025-08-15 16:15:06,446 - INFO - 127.0.0.1 - - [15/Aug/2025 16:15:06] "GET / HTTP/1.1" 200 -
+2025-08-15 16:15:06,571 - INFO - 127.0.0.1 - - [15/Aug/2025 16:15:06] "GET /static/style.css HTTP/1.1" 200 -
+2025-08-15 16:15:23,330 - INFO - 127.0.0.1 - - [15/Aug/2025 16:15:23] "[33mPOST /ask HTTP/1.1[0m" 404 -
+2025-08-15 16:15:39,281 - INFO - 127.0.0.1 - - [15/Aug/2025 16:15:39] "GET / HTTP/1.1" 200 -
+2025-08-15 16:15:39,384 - INFO - 127.0.0.1 - - [15/Aug/2025 16:15:39] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-08-15 16:18:25,183 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.223:5000
+2025-08-15 16:18:25,184 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 16:18:25,185 - INFO -  * Restarting with stat
+2025-08-15 16:18:25,483 - WARNING -  * Debugger is active!
+2025-08-15 16:18:25,485 - INFO -  * Debugger PIN: 139-371-626
+2025-08-15 16:18:56,962 - INFO - 127.0.0.1 - - [15/Aug/2025 16:18:56] "GET / HTTP/1.1" 200 -
+2025-08-15 16:18:57,206 - INFO - 127.0.0.1 - - [15/Aug/2025 16:18:57] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-08-15 16:20:16,562 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.223:5000
+2025-08-15 16:20:16,563 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 16:20:16,564 - INFO -  * Restarting with stat
+2025-08-15 16:20:16,842 - WARNING -  * Debugger is active!
+2025-08-15 16:20:16,845 - INFO -  * Debugger PIN: 139-371-626
+2025-08-15 16:20:38,265 - INFO - 127.0.0.1 - - [15/Aug/2025 16:20:38] "GET / HTTP/1.1" 200 -
+2025-08-15 16:20:38,582 - INFO - 127.0.0.1 - - [15/Aug/2025 16:20:38] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-08-15 16:20:47,091 - INFO - 127.0.0.1 - - [15/Aug/2025 16:20:47] "GET / HTTP/1.1" 200 -
+2025-08-15 16:20:47,491 - INFO - 127.0.0.1 - - [15/Aug/2025 16:20:47] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-08-15 16:20:48,039 - INFO - 127.0.0.1 - - [15/Aug/2025 16:20:48] "GET / HTTP/1.1" 200 -
+2025-08-15 16:20:48,417 - INFO - 127.0.0.1 - - [15/Aug/2025 16:20:48] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2025-08-15 16:28:15,165 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.223:5000
+2025-08-15 16:28:15,166 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 16:28:15,168 - INFO -  * Restarting with stat
+2025-08-15 16:28:15,458 - WARNING -  * Debugger is active!
+2025-08-15 16:28:15,464 - INFO -  * Debugger PIN: 183-179-081
+2025-08-15 16:29:15,388 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.223:5000
+2025-08-15 16:29:15,388 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 16:29:15,390 - INFO -  * Restarting with stat
+2025-08-15 16:29:15,661 - WARNING -  * Debugger is active!
+2025-08-15 16:29:15,663 - INFO -  * Debugger PIN: 183-179-081
+2025-08-15 16:29:37,315 - INFO - 127.0.0.1 - - [15/Aug/2025 16:29:37] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-15 16:37:19,911 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.223:5000
+2025-08-15 16:37:19,911 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 16:37:19,912 - INFO -  * Restarting with stat
+2025-08-15 16:37:20,184 - WARNING -  * Debugger is active!
+2025-08-15 16:37:20,186 - INFO -  * Debugger PIN: 183-179-081
+2025-08-15 16:38:17,487 - INFO -  * Detected change in 'C:\\funland-bot\\editor_app.py', reloading
+2025-08-15 16:38:17,540 - INFO -  * Restarting with stat
+2025-08-15 16:38:18,121 - WARNING -  * Debugger is active!
+2025-08-15 16:38:18,126 - INFO -  * Debugger PIN: 183-179-081
+2025-08-15 16:39:07,647 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.0.223:5001
+2025-08-15 16:39:07,648 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 16:39:07,650 - INFO -  * Restarting with stat
+2025-08-15 16:39:07,916 - WARNING -  * Debugger is active!
+2025-08-15 16:39:07,919 - INFO -  * Debugger PIN: 183-179-081
+2025-08-15 16:39:27,621 - INFO - 127.0.0.1 - - [15/Aug/2025 16:39:27] "[35m[1mGET /admin HTTP/1.1[0m" 500 -
+2025-08-15 16:39:27,862 - INFO - 127.0.0.1 - - [15/Aug/2025 16:39:27] "GET /admin?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1" 200 -
+2025-08-15 16:39:27,935 - INFO - 127.0.0.1 - - [15/Aug/2025 16:39:27] "GET /admin?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1" 200 -
+2025-08-15 16:39:28,339 - INFO - 127.0.0.1 - - [15/Aug/2025 16:39:28] "GET /admin?__debugger__=yes&cmd=resource&f=console.png&s=dv6cQ0MLalhYjcwpMlX5 HTTP/1.1" 200 -
+2025-08-15 16:39:28,580 - INFO - 127.0.0.1 - - [15/Aug/2025 16:39:28] "GET /admin?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1" 200 -
+2025-08-15 16:56:38,628 - INFO -  * Detected change in 'C:\\funland-bot\\editor_app.py', reloading
+2025-08-15 16:56:38,679 - INFO -  * Restarting with stat
+2025-08-15 17:05:33,750 - WARNING -  * Debugger is active!
+2025-08-15 17:05:33,758 - INFO -  * Debugger PIN: 183-179-081
+2025-08-15 17:06:17,772 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.223:5000
+2025-08-15 17:06:17,772 - INFO - [33mPress CTRL+C to quit[0m
+2025-08-15 17:06:17,773 - INFO -  * Restarting with stat
+2025-08-15 17:06:18,048 - WARNING -  * Debugger is active!
+2025-08-15 17:06:18,051 - INFO -  * Debugger PIN: 183-179-081
+2025-08-15 17:06:26,583 - INFO - 127.0.0.1 - - [15/Aug/2025 17:06:26] "GET / HTTP/1.1" 200 -
+2025-08-15 17:06:27,007 - INFO - 127.0.0.1 - - [15/Aug/2025 17:06:27] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-08-15 17:06:31,672 - INFO - 127.0.0.1 - - [15/Aug/2025 17:06:31] "GET /add HTTP/1.1" 200 -
+2025-08-15 17:06:58,645 - INFO - Создана резервная копия: backups\knowledge_backup_20250815_170658.json
+2025-08-15 17:06:58,648 - INFO - 127.0.0.1 - - [15/Aug/2025 17:06:58] "[32mPOST /add HTTP/1.1[0m" 302 -
+2025-08-15 17:06:58,972 - INFO - 127.0.0.1 - - [15/Aug/2025 17:06:58] "GET / HTTP/1.1" 200 -
+2025-08-15 17:07:12,955 - INFO - 127.0.0.1 - - [15/Aug/2025 17:07:12] "GET /?q=Что+такое HTTP/1.1" 200 -
+2025-08-15 17:08:02,624 - INFO - 127.0.0.1 - - [15/Aug/2025 17:08:02] "GET / HTTP/1.1" 200 -
+2025-08-15 17:08:08,328 - INFO - 127.0.0.1 - - [15/Aug/2025 17:08:08] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -

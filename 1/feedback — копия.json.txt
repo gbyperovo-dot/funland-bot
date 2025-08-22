@@ -1,0 +1,30 @@
+[
+    {
+        "question": "vr",
+        "feedback": "good"
+    },
+    {
+        "question": "нерф",
+        "feedback": "good"
+    },
+    {
+        "question": "день рождения",
+        "feedback": "good"
+    },
+    {
+        "question": "день рождения",
+        "feedback": "good"
+    },
+    {
+        "question": "стоимость нерф-арены",
+        "feedback": "good"
+    },
+    {
+        "question": "что такое гугл",
+        "feedback": "good"
+    },
+    {
+        "question": "как узнать какие есть у вас игры",
+        "feedback": "bad"
+    }
+]

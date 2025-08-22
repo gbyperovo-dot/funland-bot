@@ -162,6 +162,54 @@ button:active {
     transform: translateY(0);
 }
 
+/* --- КНОПКИ МЕНЮ --- */
+.menu-btn {
+    background: #6f42c1;
+    color: white;
+    margin: 5px;
+    padding: 12px 20px;
+    border-radius: 25px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.menu-btn:hover {
+    background: #5a32a3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* --- ПОДСКАЗКИ --- */
+.suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    justify-content: center;
+    transition: all 0.3s ease;
+    min-height: 60px;
+}
+
+.suggestion-btn {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+    white-space: nowrap;
+}
+
+.suggestion-btn:hover {
+    background: #138496;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
 /* --- КНОПКИ --- */
 .btn-clear {
     background: #6c757d;
@@ -179,32 +227,29 @@ button:active {
     background: #5a32a3;
 }
 
-/* --- ПОДСКАЗКИ --- */
-.suggestions {
+/* --- ИНДИКАТОР НАБОРА --- */
+.typing-indicator {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 15px;
-    background: #f8f9fa;
-    border-top: 1px solid #dee2e6;
+    align-items: center;
     justify-content: center;
-    transition: opacity 0.3s;
+    padding: 10px;
 }
 
-.suggestions button {
-    background: #e2e6ea;
-    color: #495057;
-    font-size: 13px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    white-space: nowrap;
-    transition: all 0.2s;
+.typing-indicator span {
+    width: 8px;
+    height: 8px;
+    margin: 0 2px;
+    background: #6c757d;
+    border-radius: 50%;
+    animation: typing 1.4s infinite ease-in-out;
 }
 
-.suggestions button:hover {
-    background: #d3d9e0;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+.typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typing {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
 }
 
 /* --- КАЛЬКУЛЯТОР --- */
@@ -284,10 +329,6 @@ button:active {
     cursor: pointer;
     width: 100%;
 }
-
-#calcForm button:hover {
-    background: #0056b3;
-}ё
 
 #calcForm button:hover {
     background: #0056b3;
@@ -384,11 +425,18 @@ button:active {
     .suggestions {
         gap: 6px;
         justify-content: center;
+        padding: 10px;
     }
 
-    .suggestions button {
+    .suggestion-btn {
         font-size: 12px;
-        padding: 6px 10px;
+        padding: 8px 12px;
+    }
+
+    .menu-btn {
+        padding: 10px 16px;
+        font-size: 14px;
+        margin: 3px;
     }
 
     h1 {
@@ -408,4 +456,51 @@ button:active {
     .message {
         max-width: 90%;
     }
+}
+
+/* --- ФИДБЭК КНОПКИ --- */
+.feedback-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.feedback-btn {
+    background: transparent;
+    border: 1px solid #ddd;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.feedback-btn:hover {
+    background: #f8f9fa;
+}
+
+.feedback-good:hover {
+    border-color: #28a745;
+    color: #28a745;
+}
+
+.feedback-bad:hover {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+/* --- ИСТОЧНИК СООБЩЕНИЯ --- */
+.message-source {
+    font-size: 11px;
+    color: #6c757d;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* --- ВРЕМЯ СООБЩЕНИЯ --- */
+.message-time {
+    font-size: 11px;
+    color: #6c757d;
+    margin-top: 4px;
+    text-align: right;
 }

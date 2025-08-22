@@ -1,0 +1,382 @@
+// static/js/script.js
+
+// Глобальные переменные
+let chat = null;
+let suggestions = null;
+let modal = null;
+let calculatorOpen = false;
+let calculatorHistory = [];
+
+// Инициализация при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    init();
+    loadMenu();
+    loadContextSuggestions();
+});
+
+// Инициализация элементов
+function init() {
+    chat = document.getElementById('chat');
+    suggestions = document.getElementById('suggestions');
+    modal = document.getElementById('calcModal');
+    
+    if (!chat || !suggestions) {
+        console.error("❌ Элементы 'chat' или 'suggestions' не найдены!");
+        return;
+    }
+    
+    // Добавляем приветствие
+    addMessage('assistant', `**${getGreeting()}!**\n\nЯ ваш помощник в D-Space. Чем могу помочь?`);
+    
+    // Обработчик отправки сообщения
+    document.getElementById('send-btn').addEventListener('click', sendQuestion);
+    
+    // Обработчик нажатия Enter
+    document.getElementById('user-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendQuestion();
+        }
+    });
+    
+    // Инициализация калькулятора
+    initCalculator();
+    
+    // Обработчик кнопки "Забронировать"
+    document.getElementById('booking-btn').addEventListener('click', goToBooking);
+}
+
+// Загрузка меню
+function loadMenu() {
+    fetch('/menu-items')
+        .then(response => response.json())
+        .then(data => {
+            const suggestionsDiv = document.getElementById('suggestions');
+            suggestionsDiv.innerHTML = '';
+            
+            data.items.forEach(item => {
+                const button = document.createElement('button');
+                button.textContent = item.text;
+                button.onclick = function() {
+                    document.getElementById('user-input').value = item.question;
+                    sendQuestion();
+                };
+                suggestionsDiv.appendChild(button);
+            });
+            
+            // Добавляем специальные кнопки (бронирование и калькулятор)
+            const bookingBtn = document.createElement('button');
+            bookingBtn.textContent = '📅 Забронировать';
+            bookingBtn.style.background = '#ffc107';
+            bookingBtn.style.color = '#212529';
+            bookingBtn.onclick = goToBooking;
+            suggestionsDiv.appendChild(bookingBtn);
+            
+            const calcBtn = document.createElement('button');
+            calcBtn.textContent = '🧮 Калькулятор';
+            calcBtn.className = 'btn-calc';
+            calcBtn.onclick = openCalculator;
+            suggestionsDiv.appendChild(calcBtn);
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки меню:', error);
+            // Если ошибка, показываем статическое меню как fallback
+            document.getElementById('suggestions').style.display = 'flex';
+        });
+}
+
+// Отправка вопроса
+function sendQuestion() {
+    const input = document.getElementById('user-input');
+    const question = input.value.trim();
+    
+    if (!question) return;
+    
+    // Отображаем вопрос пользователя
+    addMessage('user', question);
+    input.value = '';
+    
+    // Показываем индикатор загрузки
+    const loadingMsg = addMessage('assistant', '...');
+    loadingMsg.id = 'loading-message';
+    
+    // Отправляем запрос на сервер
+    fetch('/ask', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ question: question })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Удаляем индикатор загрузки
+        const loadingMsg = document.getElementById('loading-message');
+        if (loadingMsg) loadingMsg.remove();
+        
+        // Отображаем ответ
+        if (data.answer) {
+            const formattedAnswer = formatAnswer(data.answer);
+            const answerMsg = addMessage('assistant', formattedAnswer);
+            
+            // Добавляем контекстные подсказки
+            setTimeout(() => {
+                showContextSuggestions(question, data.answer);
+            }, 100);
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        const loadingMsg = document.getElementById('loading-message');
+        if (loadingMsg) loadingMsg.remove();
+        addMessage('assistant', '❌ Произошла ошибка при обработке запроса. Попробуйте позже.');
+    });
+}
+
+// Добавление сообщения в чат
+function addMessage(role, content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${role}`;
+    
+    if (role === 'user') {
+        messageDiv.innerHTML = `<div class="avatar">👤</div><div class="content">${escapeHtml(content)}</div>`;
+    } else {
+        messageDiv.innerHTML = `<div class="avatar">🤖</div><div class="content">${content}</div>`;
+    }
+    
+    chat.appendChild(messageDiv);
+    chat.scrollTop = chat.scrollHeight;
+    
+    // Обработка markdown для ответов ассистента
+    if (role === 'assistant') {
+        const contentDiv = messageDiv.querySelector('.content');
+        if (contentDiv) {
+            contentDiv.innerHTML = marked.parse(contentDiv.textContent || '');
+        }
+    }
+    
+    return messageDiv;
+}
+
+// Форматирование ответа
+function formatAnswer(answer) {
+    // Добавляем разметку для эмодзи и ключевых слов
+    return answer
+        .replace(/🎮/g, '<span class="emoji">🎮</span>')
+        .replace(/🎯/g, '<span class="emoji">🎯</span>')
+        .replace(/🎉/g, '<span class="emoji">🎉</span>')
+        .replace(/📅/g, '<span class="emoji">📅</span>')
+        .replace(/🧮/g, '<span class="emoji">🧮</span>')
+        .replace(/**/g, '<strong>')
+        .replace(/\*\*/g, '</strong>');
+}
+
+// Получение приветствия в зависимости от времени суток
+function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Доброе утро';
+    if (hour < 18) return 'Добрый день';
+    return 'Добрый вечер';
+}
+
+// Загрузка контекстных подсказок
+function loadContextSuggestions() {
+    // Эта функция будет вызываться из ответа ассистента
+}
+
+// Показ контекстных подсказок
+function showContextSuggestions(question, answer) {
+    const topic = getTopicFromQuestion(question);
+    
+    fetch('/suggestions')
+        .then(response => response.json())
+        .then(data => {
+            if (data[topic]) {
+                const fragment = document.createDocumentFragment();
+                
+                data[topic].forEach(btn => {
+                    const b = document.createElement('button');
+                    b.textContent = btn.text;
+                    b.className = 'context-suggestion';
+                    b.onclick = () => {
+                        document.getElementById('user-input').value = btn.question;
+                        sendQuestion();
+                    };
+                    fragment.appendChild(b);
+                });
+                
+                const contextDiv = document.createElement('div');
+                contextDiv.className = 'context-suggestions';
+                contextDiv.appendChild(fragment);
+                chat.appendChild(contextDiv);
+                contextDiv.style.display = 'flex';
+                
+                // Прокрутка до конца после добавления подсказок
+                chat.scrollTop = chat.scrollHeight;
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка загрузки подсказок:', error);
+        });
+}
+
+// Определение темы на основе вопроса
+function getTopicFromQuestion(question) {
+    const q = question.toLowerCase();
+    if (q.includes('vr') || q.includes('виртуальная реальность')) return 'vr';
+    if (q.includes('батут') || q.includes('прыжки')) return 'batuts';
+    if (q.includes('нерф') || q.includes('лазер')) return 'nerf';
+    if (q.includes('день рождения') || q.includes('др') || q.includes('др.')) return 'birthday';
+    if (q.includes('выпускной') || q.includes('окончание школы')) return 'graduation';
+    if (q.includes('мероприятие') || q.includes('событие') || q.includes('акция')) return 'events';
+    if (q.includes('орбиз') || q.includes('орби')) return 'orbiz';
+    if (q.includes('лазертаг') || q.includes('лазерный')) return 'lazertag';
+    return 'default';
+}
+
+// Открытие страницы бронирования
+function goToBooking() {
+    window.location.href = '/booking';
+}
+
+// Инициализация калькулятора
+function initCalculator() {
+    const calcModal = document.getElementById('calcModal');
+    
+    if (calcModal) {
+        // Обработчики кнопок калькулятора
+        document.querySelectorAll('#calculator-buttons button').forEach(button => {
+            button.addEventListener('click', () => {
+                const value = button.getAttribute('data-value');
+                if (value) {
+                    handleCalculatorInput(value);
+                }
+            });
+        });
+        
+        // Обработчик закрытия калькулятора
+        document.querySelector('#calcModal .close').addEventListener('click', () => {
+            calculatorOpen = false;
+        });
+        
+        // Закрытие при клике вне модального окна
+        window.addEventListener('click', (event) => {
+            if (event.target === calcModal) {
+                calculatorOpen = false;
+                calcModal.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Обработка ввода в калькуляторе
+function handleCalculatorInput(value) {
+    const display = document.getElementById('calculator-display');
+    let currentValue = display.textContent;
+    
+    if (value === 'C') {
+        display.textContent = '0';
+        calculatorHistory = [];
+        return;
+    }
+    
+    if (value === '←') {
+        if (currentValue.length > 1) {
+            display.textContent = currentValue.slice(0, -1);
+        } else {
+            display.textContent = '0';
+        }
+        return;
+    }
+    
+    if (value === '=') {
+        try {
+            const result = eval(currentValue);
+            calculatorHistory.push(`${currentValue} = ${result}`);
+            display.textContent = result;
+            saveCalculatorHistory();
+        } catch (e) {
+            display.textContent = 'Ошибка';
+        }
+        return;
+    }
+    
+    if (currentValue === '0' && !['+', '-', '*', '/'].includes(value)) {
+        display.textContent = value;
+    } else {
+        display.textContent = currentValue + value;
+    }
+}
+
+// Открытие калькулятора
+function openCalculator() {
+    calculatorOpen = true;
+    document.getElementById('calcModal').style.display = 'block';
+    loadCalculatorHistory();
+}
+
+// Сохранение истории калькулятора
+function saveCalculatorHistory() {
+    localStorage.setItem('calculatorHistory', JSON.stringify(calculatorHistory));
+}
+
+// Загрузка истории калькулятора
+function loadCalculatorHistory() {
+    const history = localStorage.getItem('calculatorHistory');
+    if (history) {
+        calculatorHistory = JSON.parse(history);
+        const historyDiv = document.getElementById('calculator-history');
+        historyDiv.innerHTML = '';
+        
+        calculatorHistory.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'history-item';
+            itemDiv.textContent = item;
+            historyDiv.appendChild(itemDiv);
+        });
+    }
+}
+
+// Экранирование HTML для безопасного отображения
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "<")
+        .replace(/>/g, ">")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// Оценка ответа
+function rate(question, feedback) {
+    const buttons = document.querySelectorAll('.feedback button');
+    buttons.forEach(b => {
+        b.disabled = true;
+        b.style.opacity = "0.5";
+        b.style.cursor = "not-allowed";
+    });
+    
+    fetch('/feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            question: question,
+            feedback: feedback
+        })
+    }).then(response => {
+        if (response.ok) {
+            const status = document.createElement('div');
+            status.className = 'feedback-status';
+            status.textContent = feedback === 1 ? 'Спасибо за положительную оценку!' : 'Спасибо за ваш отзыв!';
+            status.style.marginTop = '10px';
+            status.style.color = feedback === 1 ? 'green' : 'red';
+            document.querySelector('.feedback').appendChild(status);
+            
+            setTimeout(() => {
+                status.remove();
+            }, 3000);
+        }
+    });
+}

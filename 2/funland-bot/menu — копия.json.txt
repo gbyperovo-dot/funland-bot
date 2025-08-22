@@ -1,0 +1,44 @@
+[
+  {
+    "admin_text": "VR-зоны",
+    "display_text": "VR-зоны — от 300 ₽",
+    "question": "vr",
+    "category": "attractions",
+    "price_info": "от 300 ₽"
+  },
+  {
+    "admin_text": "Батуты",
+    "display_text": "Батутный центр — от 500 ₽",
+    "question": "батуты",
+    "category": "attractions",
+    "price_info": "от 500 ₽"
+  },
+  {
+    "admin_text": "Нерф",
+    "display_text": "Нерф-арена — от 2500 ₽",
+    "question": "нерф",
+    "category": "attractions",
+    "price_info": "от 2500 ₽"
+  },
+  {
+    "admin_text": "День рождения",
+    "display_text": "День рождения",
+    "question": "день рождения",
+    "category": "events",
+    "price_info": ""
+  },
+  {
+    "admin_text": "Выпускные",
+    "display_text": "Выпускные",
+    "question": "выпускные",
+    "category": "events",
+    "price_info": ""
+  },
+  {
+    "admin_text": "Мероприятия",
+    "display_text": "Мероприятия",
+    "question": "мероприятия",
+    "category": "events",
+    "price_info": ""
+  }
+]

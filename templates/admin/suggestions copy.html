@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Админка - Подсказки</title>
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <h1>Управление контекстными подсказками</h1>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <h2>Добавить подсказку</h2>
+        <form method="POST">
+            <label for="topic">Тема (например, vr, батуты):</label>
+            <input type="text" id="topic" name="topic" required>
+
+            <label for="suggestion-text">Текст кнопки:</label>
+            <input type="text" id="suggestion-text" name="suggestion-text" required>
+
+            <label for="suggestion-question">Вопрос (который будет отправлен):</label>
+            <input type="text" id="suggestion-question" name="suggestion-question" required>
+
+            <!-- НОВОЕ ПОЛЕ ДЛЯ ОТВЕТА -->
+            <label for="suggestion-answer">Ответ (который будет показан пользователю):</label>
+            <textarea id="suggestion-answer" name="suggestion-answer" rows="4" required></textarea>
+            <!-- КОНЕЦ НОВОГО ПОЛЯ -->
+
+            <button type="submit">Добавить подсказку</button>
+        </form>
+
+        <h2>Существующие подсказки</h2>
+        {% for topic, suggestions in suggestion_map.items() %}
+            <h3>Тема: {{ topic }}</h3>
+            <ul>
+                {% for suggestion in suggestions %}
+                    <li>
+                        <strong>{{ suggestion.text }}</strong> ({{ suggestion.question }}) - {{ suggestion.answer }}
+                        <a href="/admin/suggestions/delete/{{ topic }}/{{ suggestion.text }}" 
+                           onclick="return confirm('Удалить подсказку \'{{ suggestion.text }}\'?')">Удалить</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endfor %}
+
+        <p><a href="/admin">← Назад в админку</a></p>
+    </div>
+</body>
+</html>
