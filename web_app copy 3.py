@@ -233,12 +233,12 @@ def load_menu():
             print(f"❌ Ошибка загрузки меню: {e}")
     else:
         menu_items = [
-            {"admin_text": "VR-зоны", "display_text": "🎮 VR-зоны — от 300 ₽", "question": "vr", "category": "attractions", "price_info": "от 300 ₽"},
-            {"admin_text": "Батуты", "display_text": "🏀 Батутный центр — от 500 ₽", "question": "батуты", "category": "attractions", "price_info": "от 500 ₽"},
-            {"admin_text": "Нерф", "display_text": "🔫 Нерф-арена — от 2500 ₽", "question": "нерф", "category": "attractions", "price_info": "от 2500 ₽"},
-            {"admin_text": "День рождения", "display_text": "🎉 День рождения", "question": "день рождения", "category": "events", "price_info": ""},
-            {"admin_text": "Выпускные", "display_text": "🎓 Выпускные", "question": "выпускные", "category": "events", "price_info": ""},
-            {"admin_text": "Мероприятия", "display_text": "🎪 Мероприятия", "question": "мероприятия", "category": "events", "price_info": ""}
+            {"admin_text": "VR-зоны", "display_text": "🎮 VR-зоны — от 300 ₽", "question": "vr", "category": "attractions", "price_info": "от 300 ₽", "suggestion_topic": "vr"},
+            {"admin_text": "Батуты", "display_text": "🏀 Батутный центр — от 500 ₽", "question": "батуты", "category": "attractions", "price_info": "от 500 ₽", "suggestion_topic": "батуты"},
+            {"admin_text": "Нерф", "display_text": "🔫 Нерф-арена — от 2500 ₽", "question": "нерф", "category": "attractions", "price_info": "от 2500 ₽", "suggestion_topic": "default"},
+            {"admin_text": "День рождения", "display_text": "🎉 День рождения", "question": "день рождения", "category": "events", "price_info": "", "suggestion_topic": "default"},
+            {"admin_text": "Выпускные", "display_text": "🎓 Выпускные", "question": "выпускные", "category": "events", "price_info": "", "suggestion_topic": "default"},
+            {"admin_text": "Мероприятия", "display_text": "🎪 Мероприятия", "question": "мероприятия", "category": "events", "price_info": "", "suggestion_topic": "default"}
         ]
         with open(MENU_FILE, "w", encoding="utf-8") as f:
             json.dump(menu_items, f, ensure_ascii=False, indent=4)
@@ -271,6 +271,53 @@ load_menu()
 def index():
     """Главная страница"""
     return render_template("index.html")
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    """Обработка чат-сообщений с возвратом подсказок"""
+    data = request.json
+    question = data.get("message", "").strip().lower()
+    
+    if not question:
+        return jsonify({"response": "Пожалуйста, задайте вопрос.", "source": "error", "suggestions": []})
+    
+    # Проверяем базу знаний
+    response = KNOWLEDGE_BASE.get(question)
+    source = "knowledge_base"
+    
+    if not response:
+        try:
+            response = call_yandex_gpt(question)
+            source = "yandex_gpt"
+        except Exception as e:
+            response = f"❌ Ошибка: {str(e)}"
+            source = "error"
+    
+    # Получаем подсказки для темы
+    suggestions = []
+    for topic, items in suggestionMap.items():
+        for item in items:
+            if item["question"] == question:
+                suggestions = suggestionMap.get(topic, [])
+                break
+        if suggestions:
+            break
+    
+    # Если не нашли подсказки по вопросу, ищем по теме из меню
+    if not suggestions:
+        menu_items = load_menu()
+        for item in menu_items:
+            if item["question"] == question:
+                suggestion_topic = item.get("suggestion_topic", "default")
+                suggestions = suggestionMap.get(suggestion_topic, suggestionMap.get("default", []))
+                break
+    
+    log_interaction(question, response, source)
+    return jsonify({
+        "response": response,
+        "source": source,
+        "suggestions": suggestions
+    })
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -322,6 +369,37 @@ def feedback():
         print(f"❌ Ошибка сохранения оценки: {e}")
         return jsonify({"status": "error", "message": str(e)})
 
+@app.route("/suggestions/<topic>")
+def get_suggestions_by_topic(topic):
+    """Возвращает подсказки для указанной темы"""
+    try:
+        # Ищем подсказки для указанной темы
+        suggestions = suggestionMap.get(topic.lower(), [])
+        
+        # Если для темы нет подсказок, используем дефолтные
+        if not suggestions:
+            suggestions = suggestionMap.get("default", [])
+            
+        return jsonify({"suggestions": suggestions})
+    except Exception as e:
+        print(f"❌ Ошибка получения подсказок для темы {topic}: {e}")
+        return jsonify({"suggestions": []})
+
+@app.route("/api/menu-display")
+def get_menu_display():
+    """API для получения меню с отображаемым текстом"""
+    menu_items = load_menu()
+    display_items = []
+    
+    for item in menu_items:
+        display_items.append({
+            "text": item.get("display_text", item.get("admin_text", "")),
+            "question": item.get("question", ""),
+            "suggestion_topic": item.get("suggestion_topic", "default")
+        })
+    
+    return jsonify(display_items)
+
 @app.route("/admin/suggestions")
 def admin_suggestions():
     """Редактирование контекстных подсказки"""
@@ -331,13 +409,14 @@ def admin_suggestions():
 
 @app.route("/admin/suggestions", methods=["POST"])
 def add_suggestion():
-    """Добавление новой подсказки"""
+    """Добавление новой подсказки с ответом"""
     if not session.get("admin_logged_in"):
         return redirect(url_for("admin_login"))
     topic = request.form.get("topic").strip().lower()
     text = request.form.get("suggestion-text").strip()
     question = request.form.get("suggestion-question").strip()
-    if not topic or not text or not question:
+    answer = request.form.get("suggestion-answer").strip() # Новое поле
+    if not topic or not text or not question or not answer: # Проверка на answer
         flash("❌ Все поля обязательны", "error")
         return redirect(url_for("admin_suggestions"))
     if topic not in suggestionMap:
@@ -345,10 +424,34 @@ def add_suggestion():
     if any(s["text"] == text for s in suggestionMap[topic]):
         flash("❌ Подсказка с таким названием уже существует", "error")
         return redirect(url_for("admin_suggestions"))
-    suggestionMap[topic].append({"text": text, "question": question})
+    # Добавляем answer в подсказку
+    suggestionMap[topic].append({
+        "text": text,
+        "question": question,
+        "answer": answer # Новое поле
+    })
     save_suggestion_map()
     flash("✅ Подсказка добавлена", "success")
     return redirect(url_for("admin_suggestions"))
+
+# --- НОВЫЙ МАРШРУТ ДЛЯ ПОЛУЧЕНИЯ ОТВЕТА ПО ВОПРОСУ ПОДСКАЗКИ ---
+@app.route("/suggestion-answer", methods=["POST"])
+def get_suggestion_answer():
+    """Возвращает ответ для подсказки по вопросу из suggestionMap"""
+    data = request.json
+    question = data.get("question", "").strip().lower()
+
+    if not question:
+        return jsonify({"answer": "❌ Вопрос не указан"}), 400
+
+    # Ищем ответ в suggestionMap
+    for topic, suggestions in suggestionMap.items():
+        for suggestion in suggestions:
+            if suggestion.get("question", "").strip().lower() == question:
+                return jsonify({"answer": suggestion.get("answer", "❌ Ответ не найден")})
+
+    return jsonify({"answer": "❌ Ответ не найден"}), 404
+# --- КОНЕЦ НОВОГО МАРШРУТА ---
 
 @app.route("/admin/suggestions/delete/<topic>/<text>")
 def delete_suggestion(topic, text):
@@ -389,6 +492,7 @@ def add_menu_item():
         question = request.form.get("question", "").strip()
         category = request.form.get("category", "attractions")
         price_info = request.form.get("price_info", "")
+        suggestion_topic = request.form.get("suggestion_topic", "default")
         
         if not admin_text or not display_text or not question:
             return jsonify({"success": False, "error": "Все поля обязательны"})
@@ -408,7 +512,8 @@ def add_menu_item():
             "display_text": display_text,
             "question": question,
             "category": category,
-            "price_info": price_info
+            "price_info": price_info,
+            "suggestion_topic": suggestion_topic
         }
         
         menu_items.append(new_item)
@@ -456,6 +561,7 @@ def edit_menu_item(index):
         question = request.form.get("question", "").strip()
         category = request.form.get("category", "attractions")
         price_info = request.form.get("price_info", "")
+        suggestion_topic = request.form.get("suggestion_topic", "default")
 
         if not admin_text or not display_text or not question:
             return jsonify({"success": False, "error": "Все поля обязательны"})
@@ -474,7 +580,8 @@ def edit_menu_item(index):
             "display_text": display_text,
             "question": question,
             "category": category,
-            "price_info": price_info
+            "price_info": price_info,
+            "suggestion_topic": suggestion_topic
         }
         
         save_menu(menu_items)

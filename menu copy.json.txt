@@ -50,9 +50,10 @@
     },
     {
         "admin_text": "Секция Сircus",
-        "display_text": "Секция Сircus",
+        "display_text": "Секция Цир",
         "question": "Что такое Сircus",
         "category": "circus",
-        "price_info": "от 500"
+        "price_info": "от 500",
+        "suggestion_topic": "default"
     }
 ]

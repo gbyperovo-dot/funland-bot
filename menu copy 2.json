@@ -9,10 +9,10 @@
     },
     {
         "admin_text": "Батуты",
-        "display_text": "🏀 Батутный центр — от 500 ₽",
+        "display_text": "🏀 Батутный центр — от 400 ₽",
         "question": "батуты",
         "category": "attractions",
-        "price_info": "от 500 ₽",
+        "price_info": "от 400 ₽",
         "suggestion_topic": "батуты"
     },
     {
@@ -21,7 +21,7 @@
         "question": "нерф",
         "category": "attractions",
         "price_info": "от 2500 ₽",
-        "suggestion_topic": "default"
+        "suggestion_topic": "нерф"
     },
     {
         "admin_text": "День рождения",
@@ -29,28 +29,12 @@
         "question": "день рождения",
         "category": "events",
         "price_info": "",
-        "suggestion_topic": "default"
+        "suggestion_topic": "день рождения"
     },
     {
-        "admin_text": "Выпускные",
-        "display_text": "🎓 Выпускные",
-        "question": "выпускные",
-        "category": "events",
-        "price_info": "",
-        "suggestion_topic": "default"
-    },
-    {
-        "admin_text": "Мероприятия",
-        "display_text": "🎪 Мероприятия",
-        "question": "мероприятия",
-        "category": "events",
-        "price_info": "",
-        "suggestion_topic": "default"
-    },
-    {
-        "admin_text": "Секция Сircus",
-        "display_text": "Секция Сircus",
-        "question": "сколько стоит день рождения?",
+        "admin_text": "Циркус",
+        "display_text": "Циркус",
+        "question": "что такое циркус",
         "category": "circus",
         "price_info": "от 500",
         "suggestion_topic": "default"

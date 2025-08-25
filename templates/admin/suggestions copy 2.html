@@ -1,172 +1,155 @@
-<!-- templates/admin/suggestions.html -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Управление подсказками - D-Space Админка</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Управление подсказками - FunLand</title>
+    <link rel="stylesheet" href="/static/style.css">
     <style>
-        body {
-            background-color: #f8f9fa;
+        .admin-container {
+            max-width: 1200px;
+            margin: 20px auto;
             padding: 20px;
         }
-        .card {
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-            margin-bottom: 20px;
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
         }
-        .table th {
-            border-top: none;
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
         }
-        .badge {
-            font-size: 0.75em;
+        th {
+            background-color: #f4f4f4;
+        }
+        form {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .alert {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
-    <div class="container py-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h3 mb-0">🛠️ Управление контекстными подсказками</h1>
-            <a href="/admin" class="btn btn-secondary">← Назад в админку</a>
-        </div>
+    <div class="admin-container">
+        <nav>
+            <a href="/admin">📊 Бронирования</a> |
+            <a href="/admin/knowledge">📚 База знаний</a> |
+            <a href="/admin/logs">📜 Логи</a> |
+            <a href="/admin/suggestions">💡 Подсказки</a> |
+            <a href="/admin/logout">🚪 Выход</a>
+        </nav>
 
-        <!-- Сообщения flash -->
+        <h1>Управление контекстными подсказками</h1>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
-        <!-- Форма добавления подсказки -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h2 class="h5 mb-0">➕ Добавить новую подсказку</h2>
+        <h2>Добавить новую подсказку</h2>
+        <form method="POST" action="/admin/suggestions">
+            <div>
+                <label><strong>Тема подсказки:</strong></label>
+                <input type="text" name="topic" placeholder="Например, 'vr', 'батуты'" required>
             </div>
-            <div class="card-body">
-                <form method="POST">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="topic" class="form-label">Тема подсказки:</label>
-                            <input type="text" id="topic" name="topic" class="form-control" 
-                                   placeholder="например, 'vr', 'батуты'" required>
-                            <div class="form-text">Тема должна соответствовать вопросу из меню</div>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="suggestion-text" class="form-label">Название подсказки:</label>
-                            <input type="text" id="suggestion-text" name="suggestion-text" 
-                                   class="form-control" placeholder="например, 'Цены', 'Игры'" required>
-                        </div>
-                    </div>
+            
+            <div>
+                <label><strong>Название подсказки:</strong></label>
+                <input type="text" name="suggestion-text" placeholder="Например, 'Цены', 'Игры'" required>
+            </div>
+            
+            <div>
+                <label><strong>Вопрос для отправки:</strong></label>
+                <input type="text" name="suggestion-question" placeholder="Например, 'стоимость vr'" required>
+            </div>
+            
+            <div>
+                <label><strong>Ответ подсказки:</strong></label>
+                <textarea name="suggestion-answer" placeholder="Полный ответ на вопрос..." rows="4" required></textarea>
+            </div>
+            
+            <button type="submit">Добавить подсказку</button>
+        </form>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="suggestion-question" class="form-label">Вопрос для отправки:</label>
-                            <input type="text" id="suggestion-question" name="suggestion-question" 
-                                   class="form-control" placeholder="например, 'стоимость vr'" required>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="suggestion-answer" class="form-label">Ответ подсказки:</label>
-                            <textarea id="suggestion-answer" name="suggestion-answer" 
-                                     class="form-control" rows="3" placeholder="Полный ответ на вопрос..." required></textarea>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-success">
-                        💾 Добавить подсказку
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Список существующих подсказок -->
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h2 class="h5 mb-0">📋 Список подсказок</h2>
-            </div>
-            <div class="card-body">
-                {% if suggestion_map %}
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Тема</th>
-                                    <th>Название подсказки</th>
-                                    <th>Вопрос</th>
-                                    <th>Ответ</th>
-                                    <th>Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for topic, suggestions in suggestion_map.items() %}
-                                    {% for s in suggestions %}
-                                        <tr>
-                                            <td>
-                                                <span class="badge bg-primary">{{ topic }}</span>
-                                            </td>
-                                            <td>{{ s.text }}</td>
-                                            <td>
-                                                <code>{{ s.question }}</code>
-                                            </td>
-                                            <td>
-                                                <small class="text-muted">
-                                                    {{ s.answer[:50] }}{% if s.answer|length > 50 %}...{% endif %}
-                                                </small>
-                                            </td>
-                                            <td>
-                                                <a href="/admin/suggestions/delete/{{ topic }}/{{ s.text }}" 
-                                                   class="btn btn-sm btn-danger"
-                                                   onclick="return confirm('Удалить подсказку \"{{ s.text }}\"?')">
-                                                    🗑️ Удалить
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="alert alert-info">
-                        ℹ️ Подсказки еще не добавлены. Используйте форму выше для создания первой подсказки.
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Информация о связях с меню -->
-        <div class="card mt-4">
-            <div class="card-header bg-secondary text-white">
-                <h2 class="h5 mb-0">🔗 Связь с меню</h2>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-warning">
-                    <strong>Важно:</strong> Тема подсказки должна соответствовать полю "suggestion_topic" в кнопках меню.
-                    Например, для кнопки "VR-зоны" используйте тему "vr".
-                </div>
-                
-                <h3 class="h6">Текущие связи:</h3>
-                <ul class="list-group">
-                    <li class="list-group-item">
-                        <strong>VR-зоны</strong> → тема: <code>vr</code>
-                    </li>
-                    <li class="list-group-item">
-                        <strong>Батутный центр</strong> → тема: <code>батуты</code>
-                    </li>
-                    <li class="list-group-item">
-                        <strong>Другие кнопки</strong> → тема: <code>default</code>
-                    </li>
-                </ul>
-            </div>
-        </div>
+        <h2>Список подсказок</h2>
+        {% if suggestion_map %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Тема</th>
+                        <th>Название подсказки</th>
+                        <th>Вопрос</th>
+                        <th>Ответ</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for topic, suggestions in suggestion_map.items() %}
+                        {% for suggestion in suggestions %}
+                            <tr>
+                                <td>{{ topic }}</td>
+                                <td>{{ suggestion.text }}</td>
+                                <td>{{ suggestion.question }}</td>
+                                <td>
+                                    {% if suggestion.answer|length > 50 %}
+                                        {{ suggestion.answer[:50] }}...
+                                    {% else %}
+                                        {{ suggestion.answer }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="/admin/suggestions/delete/{{ topic }}/{{ suggestion.text }}" 
+                                       onclick="return confirm('Удалить эту подсказку?')">Удалить</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Нет доступных подсказок</p>
+        {% endif %}
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+</html>
+<select name="topic" required>
+    <option value="">-- Выберите тему из меню --</option>
+    {% for item in menu_items %}
+        <option value="{{ item.suggestion_topic }}">{{ item.admin_text }} ({{ item.suggestion_topic }})</option>
+    {% endfor %}
+    <option value="default">default (общие подсказки)</option>
+</select>
 </html>
